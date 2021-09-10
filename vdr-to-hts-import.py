@@ -11,9 +11,10 @@
 import datetime
 import json
 import os
-import requests
 import subprocess
 import time
+
+import requests
 
 # Input variables
 recdir = "/v"
@@ -23,7 +24,7 @@ password = 'password'
 mask = {
     "enabled": True,
     "start": 1000,
-    "stop":  2000,
+    "stop": 2000,
     "channelname": "Imported",
     "title": {
         "ger": "my title"
@@ -55,7 +56,7 @@ def video_duration(video_file_path):
     """Get video duration in sec from a ffprobe call, using json output"""
 
     # command is:  ffprobe -loglevel quiet -print_format json -show_format /full/path/to/videofile
-    command = ["ffprobe", "-loglevel", "quiet", "-print_format", "json", "-show_format",  video_file_path]
+    command = ["ffprobe", "-loglevel", "quiet", "-print_format", "json", "-show_format", video_file_path]
     pipe = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     out, err = pipe.communicate()
     js = json.loads(out)
