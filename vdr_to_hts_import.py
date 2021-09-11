@@ -38,6 +38,11 @@ config_template = {
 }
 
 
+class InfoError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
+
 class Info:
     """
     info files have content like this:
@@ -57,17 +62,27 @@ class Info:
     Read each line into a dict with the first character as the key. Since we are not interested in the key X that may
     occur multiple times, we store only one of the X lines.
     """
-    info = {}
-
     def __init__(self, filename):
         self.filename = filename
+        self.info = {}
 
     def get_channel_name(self):
         """
         Return the channel name with the channel ID removed
         """
-        name = self._get('C')
-        return name[name.index(' ') + 1:]
+        channel = self._get('C')
+        if channel is None:
+            raise InfoError('no channel in info file')
+        return channel[channel.index(' ') + 1:]
+
+    def get_title(self):
+        """
+        Return the title of the show
+        """
+        title = self._get('T')
+        if title is None:
+            raise InfoError('No title in info file')
+        return title
 
     def _get(self, key):
         if not self.info:
