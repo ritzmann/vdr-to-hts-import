@@ -196,18 +196,25 @@ def import_record(filepath, config, url):
     logging.info("Server Answer:", response.text)
 
 
+class DirWalker:
+    top_directory = '/v'
+
+    def walk(self):
+        directories = os.listdir(self.top_directory)
+        for folder in directories:
+            for root, _, files in os.walk(os.path.join(self.top_directory, folder)):
+                # change to:
+                # if 'info' in files:
+                #     import_record(...)
+                #
+                for filename in files:
+                    if filename[-3:] == '.ts':
+                        import_record(os.path.join(root, filename), config_template, api_url)
+
+
 def main():
-    """Iterating through recordings folder"""
-    directories = os.listdir(recdir)
-    for folder in directories:
-        for root, dirs, files in os.walk(os.path.join(recdir, folder)):
-            # change to:
-            # if 'info' in files:
-            #     import_record(...)
-            #
-            for filename in files:
-                if filename[-3:] == '.ts':
-                    import_record(os.path.join(root, filename), config_template, api_url)
+    dir_walker = DirWalker()
+    dir_walker.walk()
 
 
 if __name__ == "__main__":
