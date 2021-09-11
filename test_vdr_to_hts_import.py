@@ -1,22 +1,75 @@
+# This file is part of vdr_to_hts_import,
+# Copyright (C) 2021-present Fabian Ritzmann
+#
+# vdr_to_hts_import is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 3 as
+# published by the Free Software Foundation.
+#
+# vdr_to_hts_import is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with vdr_to_hts_import.  If not, see <https://www.gnu.org/licenses/>.
+
+from unittest.mock import Mock
+
 import pytest
 
 import vdr_to_hts_import
-from vdr_to_hts_import import DirWalker, Info, InfoError
+from vdr_to_hts_import import DirWalker, Importer, Info, InfoError
 
 
-def test_dir_walker(mocker):
+def test_dir_walker_walk(mocker):
     mocker.patch('os.listdir', return_value=['dir1', 'dir2', 'dir3'])
-    mocker.patch('os.walk', return_value=[['root1', [], ['file1', 'file2.ts']]])
-    import_record_mock = mocker.patch('vdr_to_hts_import.import_record')
+    file_list = ['file1', 'file2.ts', 'info']
+    mocker.patch('os.walk', return_value=[['root1', [], file_list]])
+    importer_mock = mocker.patch('vdr_to_hts_import.Importer')
     dir_walker = DirWalker()
 
     dir_walker.walk()
 
-    import_record_mock.assert_has_calls([
-        mocker.call('root1/file2.ts', vdr_to_hts_import.config_template, vdr_to_hts_import.api_url),
-        mocker.call('root1/file2.ts', vdr_to_hts_import.config_template, vdr_to_hts_import.api_url),
-        mocker.call('root1/file2.ts', vdr_to_hts_import.config_template, vdr_to_hts_import.api_url)
+    importer_mock.assert_has_calls([
+        mocker.call('root1'),
+        mocker.call().import_record(file_list),
+        mocker.call('root1'),
+        mocker.call().import_record(file_list),
+        mocker.call('root1'),
+        mocker.call().import_record(file_list)
     ])
+
+
+def test_importer_import_record(mocker):
+    mocker.patch.multiple('vdr_to_hts_import.Info',
+                          get_channel_name=Mock(return_value='channel1'),
+                          get_title=Mock(return_value='title1'),
+                          get_start_date_time=Mock(return_value=1231),
+                          get_duration=Mock(return_value=765))
+    response_mock = mocker.patch('requests.post', return_value=Mock())
+    response_mock.text = 'response1'
+
+    importer = Importer('root')
+
+    importer.import_record(['file1', 'file1.ts', 'info', 'file2.ts'])
+
+    config = {
+        "enabled": True,
+        "title": {
+            "fin": "title1"
+        },
+        "comment": "added by vdr_to_hts_import.py",
+        "files": [
+            {"filename": "root/file1.ts"},
+            {"filename": "root/file2.ts"}
+        ],
+        "channelname": "channel1",
+        "start": 1231,
+        "stop": 1231 + 765,
+    }
+    response_mock.assert_called_once_with(vdr_to_hts_import.api_url,
+                                          auth=(vdr_to_hts_import.user, vdr_to_hts_import.password),
+                                          json=config)
 
 
 def test_info_get_channel_name():
