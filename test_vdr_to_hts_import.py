@@ -1,17 +1,17 @@
-# This file is part of vdr_to_hts_import,
+# This file is part of vdr-to-hts-import,
 # Copyright (C) 2021-present Fabian Ritzmann
 #
-# vdr_to_hts_import is free software: you can redistribute it and/or modify
+# vdr-to-hts-import is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 3 as
 # published by the Free Software Foundation.
 #
-# vdr_to_hts_import is distributed in the hope that it will be useful,
+# vdr-to-hts-import is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with vdr_to_hts_import.  If not, see <https://www.gnu.org/licenses/>.
+# along with vdr-to-hts-import.  If not, see <https://www.gnu.org/licenses/>.
 
 from unittest.mock import Mock
 
