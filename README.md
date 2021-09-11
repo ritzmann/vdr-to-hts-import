@@ -1,8 +1,13 @@
 Import VDR recordings to HTS Tvheadend
 ======================================
 
-Iterate through a directory hierarchy and identify all
-directories that contain a `info` file in VDR format.
+Iterate through a directory hierarchy and identify all  directories that contain a `info` file in VDR format.
+
+Search each directory that contains a `info` file for `.ts` files and import them into HTS Tvheadend.
+The information contained in `info` is used for the import.
+
+Info file format
+----------------
 
 The format of an info file is described in http://www.vdr-wiki.de/wiki/index.php/Info like this:
 
