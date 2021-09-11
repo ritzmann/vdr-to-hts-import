@@ -109,6 +109,25 @@ class Info:
             raise InfoError('no description in info file')
         return description
 
+    def get_duration(self):
+        """
+        Return the EPG duration
+        """
+        event = self._get('E')
+        if event is None:
+            raise InfoError('no EPG event in info file')
+
+        event_items = event.split()
+        if len(event_items) != 4:
+            raise InfoError('expected 4 EPG event items but got %i' % len(event_items))
+
+        try:
+            duration = int(event_items[2])
+        except ValueError:
+            raise InfoError('EPG duration is wrong format')
+
+        return duration
+
     def get_short_description(self):
         """
         Return the short description of the show

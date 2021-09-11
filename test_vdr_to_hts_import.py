@@ -76,6 +76,41 @@ def test_info_get_description_no_description():
     assert 'no description in info file' == str(exc_info.value)
 
 
+def test_info_get_duration():
+    info = Info('test')
+    info.info['E'] = 'eventid 12312 234 tableid'
+
+    assert 234 == info.get_duration()
+
+
+def test_info_get_duration_wrong_number_event_items():
+    info = Info('test')
+    info.info['E'] = 'eventid 12312 tableid'
+
+    with pytest.raises(InfoError) as exc_info:
+        info.get_duration()
+    assert 'expected 4 EPG event items but got 3' == str(exc_info.value)
+
+
+def test_info_get_duration_invalid_format():
+    info = Info('test')
+    info.info['E'] = 'eventid 12312 23a4i tableid'
+
+    with pytest.raises(InfoError) as exc_info:
+        info.get_duration()
+    assert 'EPG duration is wrong format' == str(exc_info.value)
+
+
+def test_info_get_duration_no_duration():
+    info = Info('test')
+    # Need at least one entry so that Info does not try to load data from a file
+    info.info['Y'] = 'value'
+
+    with pytest.raises(InfoError) as exc_info:
+        info.get_duration()
+    assert 'no EPG event in info file' == str(exc_info.value)
+
+
 def test_info_get_short_description():
     info = Info('test')
     info.info['S'] = 'shortdescription1'
