@@ -9,6 +9,7 @@
 # to be adapted. Variables have to be adapted to personal situation.
 import datetime
 import json
+import logging
 import os
 import subprocess
 import time
@@ -89,8 +90,8 @@ def filedate2num(filepath):
     try:
         dt = int(time.mktime(datetime.datetime.strptime(filepath[-18:-3], "%Y-%m-%d%H-%M").timetuple()))
     except IOError:
-        print("ERROR in filestr2num: file name '%s' doesn't end with 'YYYY-MM-DDHH-MM.ts'. "
-              "Use Inode Change Time instead." % filepath)
+        logging.info("ERROR in filestr2num: file name '%s' doesn't end with 'YYYY-MM-DDHH-MM.ts'. "
+                     "Use Inode Change Time instead." % filepath)
         dt = int(os.stat(filepath).st_ctime)
     return dt
 
@@ -113,9 +114,9 @@ def import_record(filepath, config, url):
     config['title']['ger'] = filepath.split("/")[-1][:-3]
     config['start'] = video_start
     config['stop'] = video_start + video_duration(filepath)
-    print("New File Info: \n", json.dumps(config, sort_keys=True, indent=4))
+    logging.info("New File Info: \n", json.dumps(config, sort_keys=True, indent=4))
     response = requests.post(url, auth=(user, password), json=config)
-    print("Server Answer:", response.text)
+    logging.info("Server Answer:", response.text)
 
 
 def main():
