@@ -81,7 +81,7 @@ class Info:
         """
         title = self._get('T')
         if title is None:
-            raise InfoError('No title in info file')
+            raise InfoError('no title in info file')
         return title
 
     def _get(self, key):
