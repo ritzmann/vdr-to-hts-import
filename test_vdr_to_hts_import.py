@@ -48,7 +48,6 @@ def test_importer_import_record(mocker):
                           get_duration=Mock(return_value=765))
     response_mock = mocker.patch('requests.post', return_value=Mock())
     response_mock.text = 'response1'
-
     importer = Importer('root')
 
     importer.import_record(['file1', 'file1.ts', 'info', 'file2.ts'])
@@ -70,6 +69,19 @@ def test_importer_import_record(mocker):
     response_mock.assert_called_once_with(vdr_to_hts_import.api_url,
                                           auth=(vdr_to_hts_import.user, vdr_to_hts_import.password),
                                           json=config)
+
+
+def test_importer_import_record_no_ts_files(mocker):
+    mocker.patch.multiple('vdr_to_hts_import.Info',
+                          get_channel_name=Mock(return_value='channel1'),
+                          get_title=Mock(return_value='title1'),
+                          get_start_date_time=Mock(return_value=1231),
+                          get_duration=Mock(return_value=765))
+    importer = Importer('root')
+
+    with pytest.raises(InfoError) as exc_info:
+        importer.import_record(['file1', 'info'])
+    assert 'found info file but no .ts files in directory root' == str(exc_info.value)
 
 
 def test_info_get_channel_name():

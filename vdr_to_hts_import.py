@@ -142,15 +142,17 @@ class Importer:
     def import_record(self, files):
         info = Info(self.directory)
 
+        for file in files:
+            if '.ts' == file[-3:]:
+                self.config['files'].append({'filename': str(os.path.join(self.directory, file))})
+        if len(self.config['files']) < 1:
+            raise InfoError('found info file but no .ts files in directory ' + self.directory)
+
         self.config['channelname'] = info.get_channel_name()
         self.config['title']['fin'] = info.get_title()
         start_date_time = info.get_start_date_time()
         self.config['start'] = start_date_time
         self.config['stop'] = start_date_time + info.get_duration()
-
-        for file in files:
-            if '.ts' == file[-3:]:
-                self.config['files'].append({'filename': str(os.path.join(self.directory, file))})
 
         logging.info("new file info: \n", json.dumps(self.config, sort_keys=True, indent=4))
 
