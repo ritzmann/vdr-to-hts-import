@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-# -*- coding: UTF-8 -*-
 
 # This script has the purpose to import old TVHeadend recordings in a new TVHeadend installation. It scans a folder
 # with TVHeadend recordings and sets for each file a recording timer in TVHeadend. This is adapted from the following
@@ -18,10 +17,10 @@ import requests
 
 # Input variables
 recdir = "/v"
-api_url = "http://star.ritzmann.online:9981/api/dvr/entry/create"
+api_url = "http://localhost:9981/api/dvr/entry/create"
 user = 'user'
 password = 'password'
-mask = {
+config_template = {
     "enabled": True,
     "start": 1000,
     "stop": 2000,
@@ -36,6 +35,50 @@ mask = {
         }
     ]
 }
+
+
+class Info:
+    """
+    info files have content like this:
+
+    C C-42249-1-17 Yle TV1
+    E 16042 1390754709 3540 50 FF
+    T Kettu (12)
+    D Kuninkaalliset lapset. Rolf Herzog lähtee auto-onnettomuudessa loukkaantuneen poikansa luokse Etelä-Amerikkaan.
+    G 10
+    X 2 03 fin
+    X 3 03 fin
+    F 25
+    P 50
+    L 99
+    @ <epgsearch><channel>1 - Yle TV1</channel><searchtimer>^Kettu</searchtimer><start>1390754580</start><stop>1390758840</stop><s-id>85</s-id><eventid>16042</eventid></epgsearch>
+
+    Read each line into a dict with the first character as the key. Since we are not interested in the key X that may
+    occur multiple times, we store only one of the X lines.
+    """
+    info = {}
+
+    def __init__(self, filename):
+        self.filename = filename
+
+    def get_channel_name(self):
+        """
+        Return the channel name with the channel ID removed
+        """
+        name = self._get('C')
+        return name[name.index(' ') + 1:]
+
+    def _get(self, key):
+        if not self.info:
+            self._load_info()
+        return self.info.get(key)
+
+    def _load_info(self):
+        with open(self.filename) as file:
+            for line in file:
+                key = line[0]
+                value = line[2:]
+                self.info[key] = value
 
 
 # Functions
@@ -63,15 +106,15 @@ def video_duration(video_file_path):
     return int(float(js['format']['duration']) + 1.)
 
 
-def import_record(filepath, new_mask, url):
+def import_record(filepath, config, url):
     """Creates a json file with the information from video file and sends a recording timer to the server."""
     video_start = filedate2num(filepath)
-    new_mask['files'][0]['filename'] = filepath[8:]
-    new_mask['title']['ger'] = filepath.split("/")[-1][:-3]
-    new_mask['start'] = video_start
-    new_mask['stop'] = video_start + video_duration(filepath)
-    print("New File Info: \n", json.dumps(new_mask, sort_keys=True, indent=4))
-    response = requests.post(url, auth=(user, password), json=new_mask)
+    config['files'][0]['filename'] = filepath[8:]
+    config['title']['ger'] = filepath.split("/")[-1][:-3]
+    config['start'] = video_start
+    config['stop'] = video_start + video_duration(filepath)
+    print("New File Info: \n", json.dumps(config, sort_keys=True, indent=4))
+    response = requests.post(url, auth=(user, password), json=config)
     print("Server Answer:", response.text)
 
 
@@ -80,9 +123,13 @@ def main():
     directories = os.listdir(recdir)
     for folder in directories:
         for root, dirs, files in os.walk(os.path.join(recdir, folder)):
+            # change to:
+            # if 'info' in files:
+            #     import_record(...)
+            #
             for filename in files:
                 if filename[-3:] == '.ts':
-                    import_record(os.path.join(root, filename), mask, api_url)
+                    import_record(os.path.join(root, filename), config_template, api_url)
 
 
 if __name__ == "__main__":
