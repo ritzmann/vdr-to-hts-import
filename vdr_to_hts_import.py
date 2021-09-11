@@ -118,6 +118,25 @@ class Info:
             raise InfoError('no short description in info file')
         return short_description
 
+    def get_start_date_time(self):
+        """
+        Return the EPG start date and time
+        """
+        event = self._get('E')
+        if event is None:
+            raise InfoError('no EPG event in info file')
+
+        event_items = event.split()
+        if len(event_items) != 4:
+            raise InfoError('expected 4 EPG event items but got %i' % len(event_items))
+
+        try:
+            start_date_time = int(event_items[1])
+        except ValueError:
+            raise InfoError('EPG start date time is wrong format')
+
+        return start_date_time
+
     def get_title(self):
         """
         Return the title of the show

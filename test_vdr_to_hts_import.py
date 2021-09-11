@@ -84,6 +84,41 @@ def test_get_short_description_no_short_description():
     assert 'no short description in info file' == str(exc_info.value)
 
 
+def test_get_start_date_time():
+    info = Info('test')
+    info.info['E'] = 'eventid 12312 234 tableid'
+
+    assert 12312 == info.get_start_date_time()
+
+
+def test_get_start_date_time_wrong_number_event_items():
+    info = Info('test')
+    info.info['E'] = 'eventid 12312 tableid'
+
+    with pytest.raises(InfoError) as exc_info:
+        info.get_start_date_time()
+    assert 'expected 4 EPG event items but got 3' == str(exc_info.value)
+
+
+def test_get_start_date_time_invalid_format():
+    info = Info('test')
+    info.info['E'] = 'eventid 12a312c 234 tableid'
+
+    with pytest.raises(InfoError) as exc_info:
+        info.get_start_date_time()
+    assert 'EPG start date time is wrong format' == str(exc_info.value)
+
+
+def test_get_start_date_time_no_start_date_time():
+    info = Info('test')
+    # Need at least one entry so that Info does not try to load data from a file
+    info.info['Y'] = 'value'
+
+    with pytest.raises(InfoError) as exc_info:
+        info.get_start_date_time()
+    assert 'no EPG event in info file' == str(exc_info.value)
+
+
 def test_get_title():
     info = Info('test')
     info.info['T'] = 'title1'
