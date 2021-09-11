@@ -50,7 +50,7 @@ def test_importer_import_record(mocker):
     response_mock.text = 'response1'
     importer = Importer('root')
 
-    importer.import_record(['file1', 'file1.ts', 'info', 'file2.ts'])
+    importer.import_record(['file1', 'file1.ts', 'info', 'file2.ts', 'a.ts', '.ts', 'a'])
 
     config = {
         "enabled": True,
@@ -60,7 +60,9 @@ def test_importer_import_record(mocker):
         "comment": "added by vdr_to_hts_import.py",
         "files": [
             {"filename": "root/file1.ts"},
-            {"filename": "root/file2.ts"}
+            {"filename": "root/file2.ts"},
+            {"filename": "root/a.ts"},
+            {"filename": "root/.ts"},
         ],
         "channelname": "channel1",
         "start": 1231,
