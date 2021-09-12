@@ -150,13 +150,20 @@ def test_info_get_duration():
     assert 234 == info.get_duration()
 
 
+def test_info_get_duration_additional_event_items():
+    info = Info('test')
+    info.info['E'] = 'eventid 12312 234 tableid FF'
+
+    assert 234 == info.get_duration()
+
+
 def test_info_get_duration_wrong_number_event_items():
     info = Info('test')
     info.info['E'] = 'eventid 12312 tableid'
 
     with pytest.raises(InfoError) as exc_info:
         info.get_duration()
-    assert 'expected 4 EPG event items but got 3 in info file test/info' == str(exc_info.value)
+    assert 'expected at least 4 EPG event items but got 3 in info file test/info' == str(exc_info.value)
 
 
 def test_info_get_duration_invalid_format():
@@ -209,13 +216,20 @@ def test_info_get_start_date_time():
     assert 12312 == info.get_start_date_time()
 
 
+def test_info_get_start_date_time_additional_event_items():
+    info = Info('test')
+    info.info['E'] = 'eventid 12312 234 tableid FF'
+
+    assert 12312 == info.get_start_date_time()
+
+
 def test_info_get_start_date_time_wrong_number_event_items():
     info = Info('test')
     info.info['E'] = 'eventid 12312 tableid'
 
     with pytest.raises(InfoError) as exc_info:
         info.get_start_date_time()
-    assert 'expected 4 EPG event items but got 3 in info file test/info' == str(exc_info.value)
+    assert 'expected at least 4 EPG event items but got 3 in info file test/info' == str(exc_info.value)
 
 
 def test_info_get_start_date_time_invalid_format():

@@ -69,8 +69,9 @@ class Info:
             raise InfoError('no EPG event in info file ' + self.filepath)
 
         event_items = event.split()
-        if len(event_items) != 4:
-            raise InfoError('expected 4 EPG event items but got %i in info file %s' % (len(event_items), self.filepath))
+        if len(event_items) < 4:
+            raise InfoError('expected at least 4 EPG event items but got %i in info file %s' %
+                            (len(event_items), self.filepath))
 
         try:
             duration = int(event_items[2])
@@ -97,8 +98,9 @@ class Info:
             raise InfoError('no EPG event in info file ' + self.filepath)
 
         event_items = event.split()
-        if len(event_items) != 4:
-            raise InfoError('expected 4 EPG event items but got %i in info file %s' % (len(event_items), self.filepath))
+        if len(event_items) < 4:
+            raise InfoError('expected at least 4 EPG event items but got %i in info file %s' %
+                            (len(event_items), self.filepath))
 
         try:
             start_date_time = int(event_items[1])
