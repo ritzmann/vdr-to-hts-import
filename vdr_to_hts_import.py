@@ -174,6 +174,8 @@ class DirWalker:
 
 
 def main():
+    logging.basicConfig(filename='vdr_to_hts_import.log', level=logging.INFO)
+
     dir_walker = DirWalker()
     dir_walker.walk()
 
