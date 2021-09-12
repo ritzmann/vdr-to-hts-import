@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with vdr-to-hts-import.  If not, see <https://www.gnu.org/licenses/>.
 
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -86,190 +86,207 @@ def test_importer_import_record_no_ts_files(mocker):
     assert 'found info file but no .ts files in directory root' == str(exc_info.value)
 
 
-def test_info_get_channel_name():
+def test_info_get_channel_name(mocker):
+    open_mock = mocker.mock_open(read_data='C some-id channel1\n')
     info = Info('test')
-    info.info['C'] = 'some-id channel1'
 
-    assert 'channel1' == info.get_channel_name()
+    with patch('builtins.open', open_mock):
+        assert 'channel1' == info.get_channel_name()
 
 
-def test_info_get_channel_name_with_multiple_spaces():
+def test_info_get_channel_name_with_multiple_spaces(mocker):
+    open_mock = mocker.mock_open(read_data='C some-id name of channel 1\n')
     info = Info('test')
-    info.info['C'] = 'some-id name of channel 1'
 
-    assert 'name of channel 1' == info.get_channel_name()
+    with patch('builtins.open', open_mock):
+        assert 'name of channel 1' == info.get_channel_name()
 
 
-def test_info_get_channel_name_no_id():
+def test_info_get_channel_name_no_id(mocker):
+    open_mock = mocker.mock_open(read_data='C channel1\n')
     info = Info('test')
-    info.info['C'] = 'channel1'
 
-    with pytest.raises(ValueError) as exc_info:
-        info.get_channel_name()
-    assert 'substring not found' == str(exc_info.value)
+    with patch('builtins.open', open_mock):
+        with pytest.raises(ValueError) as exc_info:
+            info.get_channel_name()
+        assert 'substring not found' == str(exc_info.value)
 
 
-def test_info_get_channel_name_no_channel():
+def test_info_get_channel_name_no_channel(mocker):
+    open_mock = mocker.mock_open(read_data='Y channel1\n')
     info = Info('test')
-    # Need at least one entry so that Info does not try to load data from a file
-    info.info['Y'] = 'value'
 
-    with pytest.raises(InfoError) as exc_info:
-        info.get_channel_name()
-    assert 'no channel in info file test/info' == str(exc_info.value)
+    with patch('builtins.open', open_mock):
+        with pytest.raises(InfoError) as exc_info:
+            info.get_channel_name()
+        assert 'no channel in info file test/info' == str(exc_info.value)
 
 
-def test_info_get_description():
+def test_info_get_description(mocker):
+    open_mock = mocker.mock_open(read_data='D description1\n')
     info = Info('test')
-    info.info['D'] = 'description1'
 
-    assert 'description1' == info.get_description()
+    with patch('builtins.open', open_mock):
+        assert 'description1' == info.get_description()
 
 
-def test_info_get_description_with_multiple_spaces():
+def test_info_get_description_with_multiple_spaces(mocker):
+    open_mock = mocker.mock_open(read_data='D description with spaces\n')
     info = Info('test')
-    info.info['D'] = 'description with spaces'
 
-    assert 'description with spaces' == info.get_description()
+    with patch('builtins.open', open_mock):
+        assert 'description with spaces' == info.get_description()
 
 
-def test_info_get_description_no_description():
+def test_info_get_description_no_description(mocker):
+    open_mock = mocker.mock_open(read_data='Y no description\n')
     info = Info('test')
-    # Need at least one entry so that Info does not try to load data from a file
-    info.info['Y'] = 'value'
 
-    with pytest.raises(InfoError) as exc_info:
-        info.get_description()
-    assert 'no description in info file test/info' == str(exc_info.value)
+    with patch('builtins.open', open_mock):
+        with pytest.raises(InfoError) as exc_info:
+            info.get_description()
+        assert 'no description in info file test/info' == str(exc_info.value)
 
 
-def test_info_get_duration():
+def test_info_get_duration(mocker):
+    open_mock = mocker.mock_open(read_data='E eventid 12312 234 tableid\n')
     info = Info('test')
-    info.info['E'] = 'eventid 12312 234 tableid'
 
-    assert 234 == info.get_duration()
+    with patch('builtins.open', open_mock):
+        assert 234 == info.get_duration()
 
 
-def test_info_get_duration_additional_event_items():
+def test_info_get_duration_additional_event_items(mocker):
+    open_mock = mocker.mock_open(read_data='E eventid 12312 234 tableid FF\n')
     info = Info('test')
-    info.info['E'] = 'eventid 12312 234 tableid FF'
 
-    assert 234 == info.get_duration()
+    with patch('builtins.open', open_mock):
+        assert 234 == info.get_duration()
 
 
-def test_info_get_duration_wrong_number_event_items():
+def test_info_get_duration_wrong_number_event_items(mocker):
+    open_mock = mocker.mock_open(read_data='E eventid 12312 tableid\n')
     info = Info('test')
-    info.info['E'] = 'eventid 12312 tableid'
 
-    with pytest.raises(InfoError) as exc_info:
-        info.get_duration()
-    assert 'expected at least 4 EPG event items but got 3 in info file test/info' == str(exc_info.value)
+    with patch('builtins.open', open_mock):
+        with pytest.raises(InfoError) as exc_info:
+            info.get_duration()
+        assert 'expected at least 4 EPG event items but got 3 in info file test/info' == str(exc_info.value)
 
 
-def test_info_get_duration_invalid_format():
+def test_info_get_duration_invalid_format(mocker):
+    open_mock = mocker.mock_open(read_data='E eventid 12312 23a4i tableid\n')
     info = Info('test')
-    info.info['E'] = 'eventid 12312 23a4i tableid'
 
-    with pytest.raises(InfoError) as exc_info:
-        info.get_duration()
-    assert 'EPG duration is wrong format in info file test/info' == str(exc_info.value)
+    with patch('builtins.open', open_mock):
+        with pytest.raises(InfoError) as exc_info:
+            info.get_duration()
+        assert 'EPG duration is wrong format in info file test/info' == str(exc_info.value)
 
 
-def test_info_get_duration_no_duration():
+def test_info_get_duration_no_duration(mocker):
+    open_mock = mocker.mock_open(read_data='Y no event\n')
     info = Info('test')
-    # Need at least one entry so that Info does not try to load data from a file
-    info.info['Y'] = 'value'
 
-    with pytest.raises(InfoError) as exc_info:
-        info.get_duration()
-    assert 'no EPG event in info file test/info' == str(exc_info.value)
+    with patch('builtins.open', open_mock):
+        with pytest.raises(InfoError) as exc_info:
+            info.get_duration()
+        assert 'no EPG event in info file test/info' == str(exc_info.value)
 
 
-def test_info_get_short_description():
+def test_info_get_short_description(mocker):
+    open_mock = mocker.mock_open(read_data='S shortdescription1\n')
     info = Info('test')
-    info.info['S'] = 'shortdescription1'
 
-    assert 'shortdescription1' == info.get_short_description()
+    with patch('builtins.open', open_mock):
+        assert 'shortdescription1' == info.get_short_description()
 
 
-def test_info_get_short_description_with_multiple_spaces():
+def test_info_get_short_description_with_multiple_spaces(mocker):
+    open_mock = mocker.mock_open(read_data='S short description with spaces\n')
     info = Info('test')
-    info.info['S'] = 'short description with spaces'
 
-    assert 'short description with spaces' == info.get_short_description()
+    with patch('builtins.open', open_mock):
+        assert 'short description with spaces' == info.get_short_description()
 
 
-def test_info_get_short_description_no_short_description():
+def test_info_get_short_description_no_short_description(mocker):
+    open_mock = mocker.mock_open(read_data='Y no text\n')
     info = Info('test')
-    # Need at least one entry so that Info does not try to load data from a file
-    info.info['Y'] = 'value'
 
-    with pytest.raises(InfoError) as exc_info:
-        info.get_short_description()
-    assert 'no short description in info file test/info' == str(exc_info.value)
+    with patch('builtins.open', open_mock):
+        with pytest.raises(InfoError) as exc_info:
+            info.get_short_description()
+        assert 'no short description in info file test/info' == str(exc_info.value)
 
 
-def test_info_get_start_date_time():
+def test_info_get_start_date_time(mocker):
+    open_mock = mocker.mock_open(read_data='E eventid 12312 234 tableid\n')
     info = Info('test')
-    info.info['E'] = 'eventid 12312 234 tableid'
 
-    assert 12312 == info.get_start_date_time()
+    with patch('builtins.open', open_mock):
+        assert 12312 == info.get_start_date_time()
 
 
-def test_info_get_start_date_time_additional_event_items():
+def test_info_get_start_date_time_additional_event_items(mocker):
+    open_mock = mocker.mock_open(read_data='E eventid 12312 234 tableid FF\n')
     info = Info('test')
-    info.info['E'] = 'eventid 12312 234 tableid FF'
 
-    assert 12312 == info.get_start_date_time()
+    with patch('builtins.open', open_mock):
+        assert 12312 == info.get_start_date_time()
 
 
-def test_info_get_start_date_time_wrong_number_event_items():
+def test_info_get_start_date_time_wrong_number_event_items(mocker):
+    open_mock = mocker.mock_open(read_data='E eventid 12312 tableid\n')
     info = Info('test')
-    info.info['E'] = 'eventid 12312 tableid'
 
-    with pytest.raises(InfoError) as exc_info:
-        info.get_start_date_time()
-    assert 'expected at least 4 EPG event items but got 3 in info file test/info' == str(exc_info.value)
+    with patch('builtins.open', open_mock):
+        with pytest.raises(InfoError) as exc_info:
+            info.get_start_date_time()
+        assert 'expected at least 4 EPG event items but got 3 in info file test/info' == str(exc_info.value)
 
 
-def test_info_get_start_date_time_invalid_format():
+def test_info_get_start_date_time_invalid_format(mocker):
+    open_mock = mocker.mock_open(read_data='E eventid 12a312c 234 tableid\n')
     info = Info('test')
-    info.info['E'] = 'eventid 12a312c 234 tableid'
 
-    with pytest.raises(InfoError) as exc_info:
-        info.get_start_date_time()
-    assert 'EPG start date time is wrong format in info file test/info' == str(exc_info.value)
+    with patch('builtins.open', open_mock):
+        with pytest.raises(InfoError) as exc_info:
+            info.get_start_date_time()
+        assert 'EPG start date time is wrong format in info file test/info' == str(exc_info.value)
 
 
-def test_info_get_start_date_time_no_start_date_time():
+def test_info_get_start_date_time_no_start_date_time(mocker):
+    open_mock = mocker.mock_open(read_data='Y no event\n')
     info = Info('test')
-    # Need at least one entry so that Info does not try to load data from a file
-    info.info['Y'] = 'value'
 
-    with pytest.raises(InfoError) as exc_info:
-        info.get_start_date_time()
-    assert 'no EPG event in info file test/info' == str(exc_info.value)
+    with patch('builtins.open', open_mock):
+        with pytest.raises(InfoError) as exc_info:
+            info.get_start_date_time()
+        assert 'no EPG event in info file test/info' == str(exc_info.value)
 
 
-def test_info_get_title():
+def test_info_get_title(mocker):
+    open_mock = mocker.mock_open(read_data='T title1\n')
     info = Info('test')
-    info.info['T'] = 'title1'
 
-    assert 'title1' == info.get_title()
+    with patch('builtins.open', open_mock):
+        assert 'title1' == info.get_title()
 
 
-def test_info_get_title_with_multiple_spaces():
+def test_info_get_title_with_multiple_spaces(mocker):
+    open_mock = mocker.mock_open(read_data='T title with spaces\n')
     info = Info('test')
-    info.info['T'] = 'title with spaces'
 
-    assert 'title with spaces' == info.get_title()
+    with patch('builtins.open', open_mock):
+        assert 'title with spaces' == info.get_title()
 
 
-def test_info_get_title_no_title():
+def test_info_get_title_no_title(mocker):
+    open_mock = mocker.mock_open(read_data='Y no title\n')
     info = Info('test')
-    # Need at least one entry so that Info does not try to load data from a file
-    info.info['Y'] = 'value'
 
-    with pytest.raises(InfoError) as exc_info:
-        info.get_title()
-    assert 'no title in info file test/info' == str(exc_info.value)
+    with patch('builtins.open', open_mock):
+        with pytest.raises(InfoError) as exc_info:
+            info.get_title()
+        assert 'no title in info file test/info' == str(exc_info.value)

@@ -128,7 +128,7 @@ class Info:
             for line in file:
                 key = line[0]
                 value = line[2:]
-                self.info[key] = value
+                self.info[key] = value.rstrip()
 
 
 class Importer:
