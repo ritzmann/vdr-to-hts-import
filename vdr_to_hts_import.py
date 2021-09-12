@@ -156,10 +156,10 @@ class Importer:
         self.config['start'] = start_date_time
         self.config['stop'] = start_date_time + info.get_duration()
 
-        logging.info("new file info: \n", json.dumps(self.config, sort_keys=True, indent=4))
+        logging.info("new file info:\n{}".format(json.dumps(self.config, sort_keys=True, indent=4)))
 
         response = requests.post(api_url, auth=(user, password), json=self.config)
-        logging.info("server response: ", response.text)
+        logging.info("server response:\n{}".format(response.text))
 
 
 class DirWalker:
@@ -174,7 +174,7 @@ class DirWalker:
 
 
 def main():
-    logging.basicConfig(filename='vdr_to_hts_import.log', level=logging.INFO)
+    logging.basicConfig(filename='vdr_to_hts_import.log', level=logging.INFO, format='%(asctime)s %(message)s')
 
     dir_walker = DirWalker()
     dir_walker.walk()
