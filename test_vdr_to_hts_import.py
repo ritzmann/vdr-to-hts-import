@@ -116,7 +116,7 @@ def test_info_get_channel_name_no_channel():
 
     with pytest.raises(InfoError) as exc_info:
         info.get_channel_name()
-    assert 'no channel in info file' == str(exc_info.value)
+    assert 'no channel in info file test/info' == str(exc_info.value)
 
 
 def test_info_get_description():
@@ -140,7 +140,7 @@ def test_info_get_description_no_description():
 
     with pytest.raises(InfoError) as exc_info:
         info.get_description()
-    assert 'no description in info file' == str(exc_info.value)
+    assert 'no description in info file test/info' == str(exc_info.value)
 
 
 def test_info_get_duration():
@@ -156,7 +156,7 @@ def test_info_get_duration_wrong_number_event_items():
 
     with pytest.raises(InfoError) as exc_info:
         info.get_duration()
-    assert 'expected 4 EPG event items but got 3' == str(exc_info.value)
+    assert 'expected 4 EPG event items but got 3 in info file test/info' == str(exc_info.value)
 
 
 def test_info_get_duration_invalid_format():
@@ -165,7 +165,7 @@ def test_info_get_duration_invalid_format():
 
     with pytest.raises(InfoError) as exc_info:
         info.get_duration()
-    assert 'EPG duration is wrong format' == str(exc_info.value)
+    assert 'EPG duration is wrong format in info file test/info' == str(exc_info.value)
 
 
 def test_info_get_duration_no_duration():
@@ -175,7 +175,7 @@ def test_info_get_duration_no_duration():
 
     with pytest.raises(InfoError) as exc_info:
         info.get_duration()
-    assert 'no EPG event in info file' == str(exc_info.value)
+    assert 'no EPG event in info file test/info' == str(exc_info.value)
 
 
 def test_info_get_short_description():
@@ -199,7 +199,7 @@ def test_info_get_short_description_no_short_description():
 
     with pytest.raises(InfoError) as exc_info:
         info.get_short_description()
-    assert 'no short description in info file' == str(exc_info.value)
+    assert 'no short description in info file test/info' == str(exc_info.value)
 
 
 def test_info_get_start_date_time():
@@ -215,7 +215,7 @@ def test_info_get_start_date_time_wrong_number_event_items():
 
     with pytest.raises(InfoError) as exc_info:
         info.get_start_date_time()
-    assert 'expected 4 EPG event items but got 3' == str(exc_info.value)
+    assert 'expected 4 EPG event items but got 3 in info file test/info' == str(exc_info.value)
 
 
 def test_info_get_start_date_time_invalid_format():
@@ -224,7 +224,7 @@ def test_info_get_start_date_time_invalid_format():
 
     with pytest.raises(InfoError) as exc_info:
         info.get_start_date_time()
-    assert 'EPG start date time is wrong format' == str(exc_info.value)
+    assert 'EPG start date time is wrong format in info file test/info' == str(exc_info.value)
 
 
 def test_info_get_start_date_time_no_start_date_time():
@@ -234,7 +234,7 @@ def test_info_get_start_date_time_no_start_date_time():
 
     with pytest.raises(InfoError) as exc_info:
         info.get_start_date_time()
-    assert 'no EPG event in info file' == str(exc_info.value)
+    assert 'no EPG event in info file test/info' == str(exc_info.value)
 
 
 def test_info_get_title():
@@ -258,4 +258,4 @@ def test_info_get_title_no_title():
 
     with pytest.raises(InfoError) as exc_info:
         info.get_title()
-    assert 'no title in info file' == str(exc_info.value)
+    assert 'no title in info file test/info' == str(exc_info.value)

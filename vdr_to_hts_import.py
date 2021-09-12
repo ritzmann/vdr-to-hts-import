@@ -48,7 +48,7 @@ class Info:
         """
         channel = self._get('C')
         if channel is None:
-            raise InfoError('no channel in info file')
+            raise InfoError('no channel in info file ' + self.filepath)
         return channel[channel.index(' ') + 1:]
 
     def get_description(self):
@@ -57,7 +57,7 @@ class Info:
         """
         description = self._get('D')
         if description is None:
-            raise InfoError('no description in info file')
+            raise InfoError('no description in info file ' + self.filepath)
         return description
 
     def get_duration(self):
@@ -66,16 +66,16 @@ class Info:
         """
         event = self._get('E')
         if event is None:
-            raise InfoError('no EPG event in info file')
+            raise InfoError('no EPG event in info file ' + self.filepath)
 
         event_items = event.split()
         if len(event_items) != 4:
-            raise InfoError('expected 4 EPG event items but got %i' % len(event_items))
+            raise InfoError('expected 4 EPG event items but got %i in info file %s' % (len(event_items), self.filepath))
 
         try:
             duration = int(event_items[2])
         except ValueError:
-            raise InfoError('EPG duration is wrong format')
+            raise InfoError('EPG duration is wrong format in info file ' + self.filepath)
 
         return duration
 
@@ -85,7 +85,7 @@ class Info:
         """
         short_description = self._get('S')
         if short_description is None:
-            raise InfoError('no short description in info file')
+            raise InfoError('no short description in info file ' + self.filepath)
         return short_description
 
     def get_start_date_time(self):
@@ -94,16 +94,16 @@ class Info:
         """
         event = self._get('E')
         if event is None:
-            raise InfoError('no EPG event in info file')
+            raise InfoError('no EPG event in info file ' + self.filepath)
 
         event_items = event.split()
         if len(event_items) != 4:
-            raise InfoError('expected 4 EPG event items but got %i' % len(event_items))
+            raise InfoError('expected 4 EPG event items but got %i in info file %s' % (len(event_items), self.filepath))
 
         try:
             start_date_time = int(event_items[1])
         except ValueError:
-            raise InfoError('EPG start date time is wrong format')
+            raise InfoError('EPG start date time is wrong format in info file ' + self.filepath)
 
         return start_date_time
 
@@ -113,7 +113,7 @@ class Info:
         """
         title = self._get('T')
         if title is None:
-            raise InfoError('no title in info file')
+            raise InfoError('no title in info file ' + self.filepath)
         return title
 
     def _get(self, key):
