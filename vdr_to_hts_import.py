@@ -142,6 +142,13 @@ class Importer:
         }
 
     def import_record(self, files):
+        self._create_config(files)
+        logging.info("import config:\n{}".format(json.dumps(self.config, sort_keys=True, indent=4)))
+
+        response = requests.post(api_url, auth=(user, password), json=self.config)
+        logging.info("server response:\n{}".format(response.text))
+
+    def _create_config(self, files):
         info = Info(self.directory)
 
         for file in files:
@@ -155,11 +162,6 @@ class Importer:
         start_date_time = info.get_start_date_time()
         self.config['start'] = start_date_time
         self.config['stop'] = start_date_time + info.get_duration()
-
-        logging.info("new file info:\n{}".format(json.dumps(self.config, sort_keys=True, indent=4)))
-
-        response = requests.post(api_url, auth=(user, password), json=self.config)
-        logging.info("server response:\n{}".format(response.text))
 
 
 class DirWalker:
