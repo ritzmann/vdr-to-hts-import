@@ -194,30 +194,30 @@ def test_info_get_duration_no_duration(mocker):
         assert 'no EPG event in info file test/info' == str(exc_info.value)
 
 
-def test_info_get_short_description(mocker):
-    open_mock = mocker.mock_open(read_data='S shortdescription1\n')
+def test_info_get_subtitle(mocker):
+    open_mock = mocker.mock_open(read_data='S subtitle1\n')
     info = Info('test')
 
     with patch('builtins.open', open_mock):
-        assert 'shortdescription1' == info.get_short_description()
+        assert 'subtitle1' == info.get_subtitle()
 
 
-def test_info_get_short_description_with_multiple_spaces(mocker):
-    open_mock = mocker.mock_open(read_data='S short description with spaces\n')
+def test_info_get_subtitle_with_multiple_spaces(mocker):
+    open_mock = mocker.mock_open(read_data='S subtitle with spaces\n')
     info = Info('test')
 
     with patch('builtins.open', open_mock):
-        assert 'short description with spaces' == info.get_short_description()
+        assert 'subtitle with spaces' == info.get_subtitle()
 
 
-def test_info_get_short_description_no_short_description(mocker):
+def test_info_get_subtitle_no_subtitle(mocker):
     open_mock = mocker.mock_open(read_data='Y no text\n')
     info = Info('test')
 
     with patch('builtins.open', open_mock):
         with pytest.raises(InfoError) as exc_info:
-            info.get_short_description()
-        assert 'no short description in info file test/info' == str(exc_info.value)
+            info.get_subtitle()
+        assert 'no subtitle in info file test/info' == str(exc_info.value)
 
 
 def test_info_get_start_date_time(mocker):

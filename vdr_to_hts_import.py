@@ -80,13 +80,13 @@ class Info:
 
         return duration
 
-    def get_short_description(self):
+    def get_subtitle(self):
         """
-        Return the short description of the show
+        Return the subtitle of the show
         """
         short_description = self._get('S')
         if short_description is None:
-            raise InfoError('no short description in info file ' + self.filepath)
+            raise InfoError('no subtitle in info file ' + self.filepath)
         return short_description
 
     def get_start_date_time(self):
