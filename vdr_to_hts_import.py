@@ -125,6 +125,8 @@ class Info:
             for line in file:
                 key = line[0]
                 value = line[2:]
+                if value:
+                    value = bytes(value, 'ascii').decode("unicode-escape")
                 self.info[key] = value.rstrip()
 
 

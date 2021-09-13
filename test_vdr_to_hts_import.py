@@ -286,6 +286,14 @@ def test_info_get_title(mocker):
         assert 'title1' == info.get_title()
 
 
+def test_info_get_title_unicode_escape(mocker):
+    open_mock = mocker.mock_open(read_data='T s\\u00f6me Finnish title\n')
+    info = Info('test')
+
+    with patch('builtins.open', open_mock):
+        assert 'söme Finnish title' == info.get_title()
+
+
 def test_info_get_title_with_multiple_spaces(mocker):
     open_mock = mocker.mock_open(read_data='T title with spaces\n')
     info = Info('test')
