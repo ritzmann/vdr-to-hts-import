@@ -20,6 +20,7 @@ import logging
 import os
 
 import requests
+from requests.auth import HTTPDigestAuth
 
 top_directory = '/v'
 api_url = "http://localhost:9981/api/dvr/entry/create"
@@ -160,7 +161,7 @@ class Importer:
         config = self._create_config(files)
         logging.info("import config:\n{}".format(json.dumps(config, sort_keys=True, indent=4)))
 
-        response = requests.post(api_url, auth=(user, password), json=config)
+        response = requests.post(api_url, auth=HTTPDigestAuth(user, password), json=config)
         logging.info("server response:\n{}".format(response.text))
 
     def _create_config(self, files):

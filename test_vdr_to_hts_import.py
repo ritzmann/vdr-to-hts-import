@@ -16,6 +16,7 @@
 from unittest.mock import Mock, patch
 
 import pytest
+from requests.auth import HTTPDigestAuth
 
 import vdr_to_hts_import
 from vdr_to_hts_import import DirWalker, Importer, Info, InfoError, UnicodeEscapeHeuristic
@@ -81,7 +82,7 @@ D description 1""")
         "stop": 1231 + 765
     }
     response_mock.assert_called_once_with(vdr_to_hts_import.api_url,
-                                          auth=(vdr_to_hts_import.user, vdr_to_hts_import.password),
+                                          auth=HTTPDigestAuth(vdr_to_hts_import.user, vdr_to_hts_import.password),
                                           json=config)
 
 
