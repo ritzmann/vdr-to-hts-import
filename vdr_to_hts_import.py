@@ -27,6 +27,24 @@ user = 'user'
 password = 'password'
 
 
+class UnicodeEscapeHeuristic:
+    """
+    Decode a string based on the following algorithm:
+    1. If string contains only 7-bit ASCII characters, decode as unicode-escape
+    2. Otherwise, assume it is already UTF-8 encoded
+    """
+    @staticmethod
+    def decode(text):
+        if UnicodeEscapeHeuristic._is_ascii(text):
+            return bytes(text, 'ascii').decode("unicode-escape")
+        else:
+            return text
+
+    @staticmethod
+    def _is_ascii(text):
+        return all(ord(c) < 128 for c in text)
+
+
 class InfoError(Exception):
     def __init__(self, message):
         super().__init__(message)
@@ -121,13 +139,17 @@ class Info:
         return self.info.get(key)
 
     def _load_info(self):
-        with open(self.filepath) as file:
-            for line in file:
-                key = line[0]
-                value = line[2:]
-                if value:
-                    value = bytes(value, 'ascii').decode("unicode-escape")
-                self.info[key] = value.rstrip()
+        try:
+            with open(self.filepath) as file:
+                for line in file:
+                    key = line[0]
+                    value = line[2:]
+                    if value:
+                        value = UnicodeEscapeHeuristic.decode(value)
+                    self.info[key] = value.rstrip()
+        except Exception as exc:
+            logging.error('Failed to process file ' + self.filepath, exc_info=exc)
+            raise
 
 
 class Importer:

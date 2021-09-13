@@ -18,7 +18,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 import vdr_to_hts_import
-from vdr_to_hts_import import DirWalker, Importer, Info, InfoError
+from vdr_to_hts_import import DirWalker, Importer, Info, InfoError, UnicodeEscapeHeuristic
 
 
 def test_dir_walker_walk(mocker):
@@ -132,6 +132,17 @@ def test_info_get_channel_name_no_channel(mocker):
         with pytest.raises(InfoError) as exc_info:
             info.get_channel_name()
         assert 'no channel in info file test/info' == str(exc_info.value)
+
+
+def test_info_get_channel_name_open_exception(mocker):
+    open_mock = mocker.mock_open()
+    open_mock.side_effect = IOError('test message')
+    info = Info('test')
+
+    with patch('builtins.open', open_mock):
+        with pytest.raises(IOError) as exc_info:
+            info.get_channel_name()
+        assert 'test message' == str(exc_info.value)
 
 
 def test_info_get_description(mocker):
@@ -294,6 +305,14 @@ def test_info_get_title_unicode_escape(mocker):
         assert 'söme Finnish title' == info.get_title()
 
 
+def test_info_get_title_utf_8(mocker):
+    open_mock = mocker.mock_open(read_data='T söme Finnish title\n')
+    info = Info('test')
+
+    with patch('builtins.open', open_mock):
+        assert 'söme Finnish title' == info.get_title()
+
+
 def test_info_get_title_with_multiple_spaces(mocker):
     open_mock = mocker.mock_open(read_data='T title with spaces\n')
     info = Info('test')
@@ -310,3 +329,15 @@ def test_info_get_title_no_title(mocker):
         with pytest.raises(InfoError) as exc_info:
             info.get_title()
         assert 'no title in info file test/info' == str(exc_info.value)
+
+
+def test_unicode_ascii():
+    assert 'test' == UnicodeEscapeHeuristic.decode('test')
+
+
+def test_unicode_url_encoded():
+    assert 'söme' == UnicodeEscapeHeuristic.decode('s\\u00f6me')
+
+
+def test_unicode_utf_8():
+    assert 'söme' == UnicodeEscapeHeuristic.decode('söme')
