@@ -227,9 +227,9 @@ def test_info_get_subtitle_no_subtitle(mocker):
     info = Info('test')
 
     with patch('builtins.open', open_mock):
-        with pytest.raises(InfoError) as exc_info:
-            info.get_subtitle()
-        assert 'no subtitle in info file test/info' == str(exc_info.value)
+        subtitle = info.get_subtitle()
+
+    assert subtitle is None
 
 
 def test_info_get_start_date_time(mocker):
