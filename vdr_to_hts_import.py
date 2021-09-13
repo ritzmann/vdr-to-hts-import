@@ -161,7 +161,20 @@ class Importer:
         config = self._create_config(files)
         logging.info("import config:\n{}".format(json.dumps(config, sort_keys=True, indent=4)))
 
-        response = requests.post(api_url, auth=HTTPDigestAuth(user, password), json=config)
+        # This horrible piece of code seems to manage to import many recordings:
+        # response = requests.get(api_url + '?conf=' + json.dumps(config), auth=HTTPDigestAuth(user, password))
+
+        # Tvheadend will reject POST requests with any other content type than this:
+        # (Took some reading of the source code to find that)
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        # Usually you would use `json=` to pass the config data into the POST body but /api/dvr/entry/create expects
+        # that the body starts with the string "conf=". Therefore we need to use json.dumps and because requests sets
+        # the content type only to a form when you pass a dict into `data=`, we need to explicitly set the content type
+        # to a form.
+        response = requests.post(api_url,
+                                 auth=HTTPDigestAuth(user, password),
+                                 headers=headers,
+                                 data="conf={}".format(json.dumps(config)))
         logging.info("server response:\n{}".format(response.text))
 
     def _create_config(self, files):

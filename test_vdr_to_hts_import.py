@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with vdr-to-hts-import.  If not, see <https://www.gnu.org/licenses/>.
 
+import json
 from unittest.mock import Mock, patch
 
 import pytest
@@ -59,6 +60,7 @@ D description 1""")
     with patch('builtins.open', open_mock):
         importer.import_record(['file1', 'file1.ts', 'info', 'file2.ts', 'a.ts', '.ts', 'a'])
 
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
     config = {
         "enabled": True,
         "title": {
@@ -83,7 +85,8 @@ D description 1""")
     }
     response_mock.assert_called_once_with(vdr_to_hts_import.api_url,
                                           auth=HTTPDigestAuth(vdr_to_hts_import.user, vdr_to_hts_import.password),
-                                          json=config)
+                                          headers=headers,
+                                          data="conf={}".format(json.dumps(config)))
 
 
 def test_importer_import_record_no_ts_files(mocker):
