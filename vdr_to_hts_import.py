@@ -134,34 +134,36 @@ class Info:
 class Importer:
     def __init__(self, directory):
         self.directory = directory
-        self.config = {
+
+    def import_record(self, files):
+        config = self._create_config(files)
+        logging.info("import config:\n{}".format(json.dumps(config, sort_keys=True, indent=4)))
+
+        response = requests.post(api_url, auth=(user, password), json=config)
+        logging.info("server response:\n{}".format(response.text))
+
+    def _create_config(self, files):
+        config = {
             "enabled": True,
             "title": {},
             "comment": "added by vdr_to_hts_import.py",
             "files": []
         }
-
-    def import_record(self, files):
-        self._create_config(files)
-        logging.info("import config:\n{}".format(json.dumps(self.config, sort_keys=True, indent=4)))
-
-        response = requests.post(api_url, auth=(user, password), json=self.config)
-        logging.info("server response:\n{}".format(response.text))
-
-    def _create_config(self, files):
         info = Info(self.directory)
 
         for file in files:
             if '.ts' == file[-3:]:
-                self.config['files'].append({'filename': str(os.path.join(self.directory, file))})
-        if len(self.config['files']) < 1:
+                config['files'].append({'filename': str(os.path.join(self.directory, file))})
+        if len(config['files']) < 1:
             raise InfoError('found info file but no .ts files in directory ' + self.directory)
 
-        self.config['channelname'] = info.get_channel_name()
-        self.config['title']['fin'] = info.get_title()
+        config['channelname'] = info.get_channel_name()
+        config['title']['fin'] = info.get_title()
         start_date_time = info.get_start_date_time()
-        self.config['start'] = start_date_time
-        self.config['stop'] = start_date_time + info.get_duration()
+        config['start'] = start_date_time
+        config['stop'] = start_date_time + info.get_duration()
+
+        return config
 
 
 class DirWalker:
