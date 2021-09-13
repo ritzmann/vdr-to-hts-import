@@ -21,7 +21,6 @@ import os
 
 import requests
 
-
 top_directory = '/v'
 api_url = "http://localhost:9981/api/dvr/entry/create"
 user = 'user'
@@ -38,6 +37,7 @@ class Info:
     Read each line into a dict with the first character as the key. Since we are not interested in the key X that may
     occur multiple times, we store only one of the X lines.
     """
+
     def __init__(self, directory):
         self.filepath = os.path.join(directory, 'info')
         self.info = {}
@@ -158,9 +158,20 @@ class Importer:
             raise InfoError('found info file but no .ts files in directory ' + self.directory)
 
         config['channelname'] = info.get_channel_name()
+
         config['title']['fin'] = info.get_title()
+
+        subtitle = info.get_subtitle()
+        if subtitle:
+            config['subtitle'] = {"fin": subtitle}
+
+        description = info.get_description()
+        if description:
+            config['description'] = {"fin": description}
+
         start_date_time = info.get_start_date_time()
         config['start'] = start_date_time
+
         config['stop'] = start_date_time + info.get_duration()
 
         return config

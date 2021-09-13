@@ -48,9 +48,15 @@ def test_importer_import_record(mocker):
                           get_duration=Mock(return_value=765))
     response_mock = mocker.patch('requests.post', return_value=Mock())
     response_mock.text = 'response1'
+    open_mock = mocker.mock_open(read_data="""C some-id channel1
+E 3335 1231 765 4E 15
+T title1
+S subtitle1
+D description 1""")
     importer = Importer('root')
 
-    importer.import_record(['file1', 'file1.ts', 'info', 'file2.ts', 'a.ts', '.ts', 'a'])
+    with patch('builtins.open', open_mock):
+        importer.import_record(['file1', 'file1.ts', 'info', 'file2.ts', 'a.ts', '.ts', 'a'])
 
     config = {
         "enabled": True,
@@ -65,8 +71,14 @@ def test_importer_import_record(mocker):
             {"filename": "root/.ts"},
         ],
         "channelname": "channel1",
+        "subtitle": {
+            "fin": "subtitle1"
+        },
+        "description": {
+            "fin": "description 1"
+        },
         "start": 1231,
-        "stop": 1231 + 765,
+        "stop": 1231 + 765
     }
     response_mock.assert_called_once_with(vdr_to_hts_import.api_url,
                                           auth=(vdr_to_hts_import.user, vdr_to_hts_import.password),
