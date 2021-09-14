@@ -161,9 +161,6 @@ class Importer:
         config = self._create_config(files)
         logging.info("import config:\n{}".format(json.dumps(config, sort_keys=True, indent=4)))
 
-        # This horrible piece of code seems to manage to import many recordings:
-        # response = requests.get(api_url + '?conf=' + json.dumps(config), auth=HTTPDigestAuth(user, password))
-
         # Tvheadend will reject POST requests with any other content type than this:
         # (Took some reading of the source code to find that)
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
