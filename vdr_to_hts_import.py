@@ -53,10 +53,9 @@ class InfoError(Exception):
 
 class Info:
     """
-    Read each line into a dict with the first character as the key. Since we are not interested in the key X that may
-    occur multiple times, we store only one of the X lines.
+    Read each VDR info line into a dict with the first character as the key. Since we are not interested in key X that
+    may occur multiple times, we store only one of the X lines.
     """
-
     def __init__(self, directory):
         self.filepath = os.path.join(directory, 'info')
         self.info = {}
@@ -153,28 +152,15 @@ class Info:
             raise
 
 
-class Importer:
-    def __init__(self, directory):
+class Config:
+    """
+    Create a config dict that can be imported into Tvheadend
+    """
+    def __init__(self, directory, files):
         self.directory = directory
+        self.files = files
 
-    def import_record(self, files):
-        config = self._create_config(files)
-        logging.info("import config:\n{}".format(json.dumps(config, sort_keys=True, indent=4)))
-
-        # Tvheadend will reject POST requests with any other content type than this:
-        # (Took some reading of the source code to find that)
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        # Usually you would use `json=` to pass the config data into the POST body but /api/dvr/entry/create expects
-        # that the body starts with the string "conf=". Therefore we need to use json.dumps and because requests sets
-        # the content type only to a form when you pass a dict into `data=`, we need to explicitly set the content type
-        # to a form.
-        response = requests.post(api_url,
-                                 auth=HTTPDigestAuth(user, password),
-                                 headers=headers,
-                                 data="conf={}".format(json.dumps(config)))
-        logging.info("server response:\n{}".format(response.text))
-
-    def _create_config(self, files):
+    def create_from_info(self):
         config = {
             "enabled": True,
             "title": {},
@@ -183,7 +169,7 @@ class Importer:
         }
         info = Info(self.directory)
 
-        for file in files:
+        for file in self.files:
             if '.ts' == file[-3:]:
                 config['files'].append({'filename': str(os.path.join(self.directory, file))})
         if len(config['files']) < 1:
@@ -209,6 +195,30 @@ class Importer:
         return config
 
 
+class Importer:
+    """
+    Read a VDR directory and import the files into Tvheadend
+    """
+    @staticmethod
+    def import_record(directory, files):
+        config = Config(directory, files)
+        config_dict = config.create_from_info()
+        logging.info("import config:\n{}".format(json.dumps(config_dict, sort_keys=True, indent=4)))
+
+        # Tvheadend will reject POST requests with any other content type than this:
+        # (Took some reading of the source code to find that)
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        # Usually you would use `json=` to pass the config data into the POST body but /api/dvr/entry/create expects
+        # that the body starts with the string "conf=". Therefore we need to use json.dumps and because requests sets
+        # the content type only to a form when you pass a dict into `data=`, we need to explicitly set the content type
+        # to a form.
+        response = requests.post(api_url,
+                                 auth=HTTPDigestAuth(user, password),
+                                 headers=headers,
+                                 data="conf={}".format(json.dumps(config_dict)))
+        logging.info("server response:\n{}".format(response.text))
+
+
 class DirWalker:
     @staticmethod
     def walk():
@@ -216,15 +226,13 @@ class DirWalker:
         for folder in directories:
             for root, _, files in os.walk(os.path.join(top_directory, folder)):
                 if 'info' in files:
-                    importer = Importer(root)
-                    importer.import_record(files)
+                    Importer.import_record(root, files)
 
 
 def main():
     logging.basicConfig(filename='vdr_to_hts_import.log', level=logging.INFO, format='%(asctime)s %(message)s')
 
-    dir_walker = DirWalker()
-    dir_walker.walk()
+    DirWalker.walk()
 
 
 if __name__ == "__main__":

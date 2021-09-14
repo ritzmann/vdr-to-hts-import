@@ -20,7 +20,7 @@ import pytest
 from requests.auth import HTTPDigestAuth
 
 import vdr_to_hts_import
-from vdr_to_hts_import import DirWalker, Importer, Info, InfoError, UnicodeEscapeHeuristic
+from vdr_to_hts_import import Config, DirWalker, Importer, Info, InfoError, UnicodeEscapeHeuristic
 
 
 def test_dir_walker_walk(mocker):
@@ -28,17 +28,13 @@ def test_dir_walker_walk(mocker):
     file_list = ['file1', 'file2.ts', 'info']
     mocker.patch('os.walk', return_value=[['root1', [], file_list]])
     importer_mock = mocker.patch('vdr_to_hts_import.Importer')
-    dir_walker = DirWalker()
 
-    dir_walker.walk()
+    DirWalker.walk()
 
     importer_mock.assert_has_calls([
-        mocker.call('root1'),
-        mocker.call().import_record(file_list),
-        mocker.call('root1'),
-        mocker.call().import_record(file_list),
-        mocker.call('root1'),
-        mocker.call().import_record(file_list)
+        mocker.call.import_record('root1', file_list),
+        mocker.call.import_record('root1', file_list),
+        mocker.call.import_record('root1', file_list)
     ])
 
 
@@ -55,10 +51,9 @@ E 3335 1231 765 4E 15
 T title1
 S subtitle1
 D description 1""")
-    importer = Importer('root')
 
     with patch('builtins.open', open_mock):
-        importer.import_record(['file1', 'file1.ts', 'info', 'file2.ts', 'a.ts', '.ts', 'a'])
+        Importer.import_record('root', ['file1', 'file1.ts', 'info', 'file2.ts', 'a.ts', '.ts', 'a'])
 
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
     config = {
@@ -95,11 +90,33 @@ def test_importer_import_record_no_ts_files(mocker):
                           get_title=Mock(return_value='title1'),
                           get_start_date_time=Mock(return_value=1231),
                           get_duration=Mock(return_value=765))
-    importer = Importer('root')
 
     with pytest.raises(InfoError) as exc_info:
-        importer.import_record(['file1', 'info'])
+        Importer.import_record('root', ['file1', 'info'])
     assert 'found info file but no .ts files in directory root' == str(exc_info.value)
+
+
+def test_config(mocker):
+    mocker.patch.multiple('vdr_to_hts_import.Info',
+                          get_channel_name=Mock(return_value='channel1'),
+                          get_description=Mock(return_value='description 1'),
+                          get_subtitle=Mock(return_value='subtitle1'),
+                          get_title=Mock(return_value='title1'),
+                          get_start_date_time=Mock(return_value=1231),
+                          get_duration=Mock(return_value=765))
+    config = Config('root', ['file1.ts', 'info', 'file2.ts'])
+
+    assert {
+       'channelname': 'channel1',
+       'comment': 'added by vdr_to_hts_import.py',
+       'description': {'fin': 'description 1'},
+       'enabled': True,
+       'files': [{'filename': 'root/file1.ts'}, {'filename': 'root/file2.ts'}],
+       'start': 1231,
+       'stop': 1996,
+       'subtitle': {'fin': 'subtitle1'},
+       'title': {'fin': 'title1'}
+    } == config.create_from_info()
 
 
 def test_info_get_channel_name(mocker):
