@@ -18,6 +18,7 @@
 import json
 import logging
 import os
+import subprocess
 
 import requests
 from requests.auth import HTTPDigestAuth
@@ -169,11 +170,16 @@ class Config:
         }
         info = Info(self.directory)
 
-        for file in self.files:
-            if '.ts' == file[-3:]:
-                config['files'].append({'filename': str(os.path.join(self.directory, file))})
-        if len(config['files']) < 1:
-            raise InfoError('found info file but no .ts files in directory ' + self.directory)
+        start_date_time = info.get_start_date_time()
+        config['start'] = start_date_time
+
+        stop_date_time = start_date_time + info.get_duration()
+        config['stop'] = stop_date_time
+
+        stop = self._add_files(config, start_date_time)
+        if stop_date_time != stop:
+            logging.warning("Expected total stop time %s to match combined stop time %s for directory %s",
+                            stop_date_time, stop, self.directory)
 
         config['channelname'] = info.get_channel_name()
 
@@ -187,12 +193,33 @@ class Config:
         if description:
             config['description'] = {"fin": description}
 
-        start_date_time = info.get_start_date_time()
-        config['start'] = start_date_time
-
-        config['stop'] = start_date_time + info.get_duration()
-
         return config
+
+    def _add_files(self, config, start):
+        for file in self.files:
+            if '.ts' == file[-3:]:
+                duration = self._add_ts_file(config, file, start)
+                start = start + duration
+
+        if len(config['files']) < 1:
+            raise InfoError('found info file but no .ts files in directory ' + self.directory)
+
+        return start
+
+    def _add_ts_file(self, config, file, start):
+        duration = self._get_duration(file)
+        config['files'].append({
+            'filename': str(os.path.join(self.directory, file)),
+            'start': start,
+            'stop': start + duration
+        })
+        return duration
+
+    def _get_duration(self, file):
+        process = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration_ts', '-of',
+                                  'default=noprint_wrappers=1:nokey=1', str(os.path.join(self.directory, file))],
+                                 capture_output=True, check=True, text=True)
+        return int(process.stdout)
 
 
 class Importer:

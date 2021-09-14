@@ -39,21 +39,34 @@ def test_dir_walker_walk(mocker):
 
 
 def test_importer_import_record(mocker):
-    mocker.patch.multiple('vdr_to_hts_import.Info',
-                          get_channel_name=Mock(return_value='channel1'),
-                          get_title=Mock(return_value='title1'),
-                          get_start_date_time=Mock(return_value=1231),
-                          get_duration=Mock(return_value=765))
+    config_mock = mocker.patch('vdr_to_hts_import.Config.create_from_info', return_value={
+        "enabled": True,
+        "title": {"fin": "title1"},
+        "comment": "added by vdr_to_hts_import.py",
+        "files": [
+            {"filename": "root/file1.ts",
+             "start": 1231,
+             "stop": 1454},
+            {"filename": "root/file2.ts",
+             "start": 1455,
+             "stop": 1643},
+            {"filename": "root/a.ts",
+             "start": 1644,
+             "stop": 1887},
+            {"filename": "root/.ts",
+             "start": 1888,
+             "stop": 1996}
+        ],
+        "channelname": "channel1",
+        "subtitle": {"fin": "subtitle1"},
+        "description": {"fin": "description 1"},
+        "start": 1231,
+        "stop": 1996
+    })
     response_mock = mocker.patch('requests.post', return_value=Mock())
     response_mock.text = 'response1'
-    open_mock = mocker.mock_open(read_data="""C some-id channel1
-E 3335 1231 765 4E 15
-T title1
-S subtitle1
-D description 1""")
 
-    with patch('builtins.open', open_mock):
-        Importer.import_record('root', ['file1', 'file1.ts', 'info', 'file2.ts', 'a.ts', '.ts', 'a'])
+    Importer.import_record('root', ['file1', 'file1.ts', 'info', 'file2.ts', 'a.ts', '.ts', 'a'])
 
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
     config = {
@@ -63,10 +76,18 @@ D description 1""")
         },
         "comment": "added by vdr_to_hts_import.py",
         "files": [
-            {"filename": "root/file1.ts"},
-            {"filename": "root/file2.ts"},
-            {"filename": "root/a.ts"},
-            {"filename": "root/.ts"},
+            {"filename": "root/file1.ts",
+             "start": 1231,
+             "stop": 1454},
+            {"filename": "root/file2.ts",
+             "start": 1455,
+             "stop": 1643},
+            {"filename": "root/a.ts",
+             "start": 1644,
+             "stop": 1887},
+            {"filename": "root/.ts",
+             "start": 1888,
+             "stop": 1996}
         ],
         "channelname": "channel1",
         "subtitle": {
@@ -76,7 +97,7 @@ D description 1""")
             "fin": "description 1"
         },
         "start": 1231,
-        "stop": 1231 + 765
+        "stop": 1996
     }
     response_mock.assert_called_once_with(vdr_to_hts_import.api_url,
                                           auth=HTTPDigestAuth(vdr_to_hts_import.user, vdr_to_hts_import.password),
@@ -103,7 +124,9 @@ def test_config(mocker):
                           get_subtitle=Mock(return_value='subtitle1'),
                           get_title=Mock(return_value='title1'),
                           get_start_date_time=Mock(return_value=1231),
-                          get_duration=Mock(return_value=765))
+                          get_duration=Mock(return_value=768))
+    run_mock = mocker.patch('subprocess.run')
+    run_mock.return_value.stdout = '384'  # 384 + 384 == 768 (total duration)
     config = Config('root', ['file1.ts', 'info', 'file2.ts'])
 
     assert {
@@ -111,9 +134,16 @@ def test_config(mocker):
        'comment': 'added by vdr_to_hts_import.py',
        'description': {'fin': 'description 1'},
        'enabled': True,
-       'files': [{'filename': 'root/file1.ts'}, {'filename': 'root/file2.ts'}],
+       'files': [
+           {'filename': 'root/file1.ts',
+            'start': 1231,
+            'stop': 1231 + 384},
+           {'filename': 'root/file2.ts',
+            'start': 1231 + 384,
+            'stop': 1231 + 384 + 384}
+       ],
        'start': 1231,
-       'stop': 1996,
+       'stop': 1231 + 768,
        'subtitle': {'fin': 'subtitle1'},
        'title': {'fin': 'title1'}
     } == config.create_from_info()
