@@ -39,7 +39,7 @@ def test_dir_walker_walk(mocker):
 
 
 def test_importer_import_record(mocker):
-    config_mock = mocker.patch('vdr_to_hts_import.Config.create_from_info', return_value={
+    mocker.patch('vdr_to_hts_import.Config.create_from_info', return_value={
         "enabled": True,
         "title": {"fin": "title1"},
         "comment": "added by vdr_to_hts_import.py",

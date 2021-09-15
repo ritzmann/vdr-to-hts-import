@@ -17,6 +17,7 @@
 
 import json
 import logging
+import math
 import os
 import subprocess
 
@@ -204,6 +205,7 @@ class Config:
         if len(config['files']) < 1:
             raise InfoError('found info file but no .ts files in directory ' + self.directory)
 
+        # this is actually the stop timestamp of the last file
         return start
 
     def _add_ts_file(self, config, file, start):
@@ -216,10 +218,10 @@ class Config:
         return duration
 
     def _get_duration(self, file):
-        process = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration_ts', '-of',
+        process = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of',
                                   'default=noprint_wrappers=1:nokey=1', str(os.path.join(self.directory, file))],
                                  capture_output=True, check=True, text=True)
-        return int(process.stdout)
+        return math.ceil(float(process.stdout))
 
 
 class Importer:
