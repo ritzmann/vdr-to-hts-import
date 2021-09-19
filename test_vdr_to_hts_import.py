@@ -45,20 +45,7 @@ def test_importer_import_record(mocker):
         "enabled": True,
         "title": {"fin": "title1"},
         "comment": "added by vdr_to_hts_import.py",
-        "files": [
-            {"filename": "root/file1.ts",
-             "start": 1231,
-             "stop": 1454},
-            {"filename": "root/file2.ts",
-             "start": 1455,
-             "stop": 1643},
-            {"filename": "root/a.ts",
-             "start": 1644,
-             "stop": 1887},
-            {"filename": "root/.ts",
-             "start": 1888,
-             "stop": 1996}
-        ],
+        "files": [{"filename": "root/concat.ts"}],
         "channelname": "channel1",
         "subtitle": {"fin": "subtitle1"},
         "description": {"fin": "description 1"},
@@ -73,31 +60,12 @@ def test_importer_import_record(mocker):
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
     config = {
         "enabled": True,
-        "title": {
-            "fin": "title1"
-        },
+        "title": {"fin": "title1"},
         "comment": "added by vdr_to_hts_import.py",
-        "files": [
-            {"filename": "root/file1.ts",
-             "start": 1231,
-             "stop": 1454},
-            {"filename": "root/file2.ts",
-             "start": 1455,
-             "stop": 1643},
-            {"filename": "root/a.ts",
-             "start": 1644,
-             "stop": 1887},
-            {"filename": "root/.ts",
-             "start": 1888,
-             "stop": 1996}
-        ],
+        "files": [{"filename": "root/concat.ts"}],
         "channelname": "channel1",
-        "subtitle": {
-            "fin": "subtitle1"
-        },
-        "description": {
-            "fin": "description 1"
-        },
+        "subtitle": {"fin": "subtitle1"},
+        "description": {"fin": "description 1"},
         "start": 1231,
         "stop": 1996
     }
@@ -119,7 +87,33 @@ def test_importer_import_record_no_ts_files(mocker):
     assert 'found info file but no .ts files in directory root' == str(exc_info.value)
 
 
-def test_config(mocker):
+def test_config_single_ts_file(mocker):
+    mocker.patch.multiple('vdr_to_hts_import.Info',
+                          get_channel_name=Mock(return_value='channel1'),
+                          get_description=Mock(return_value='description 1'),
+                          get_subtitle=Mock(return_value='subtitle1'),
+                          get_title=Mock(return_value='title1'),
+                          get_start_date_time=Mock(return_value=1231),
+                          get_duration=Mock(return_value=768))
+    open_mock = mocker.mock_open()
+    mocker.patch('subprocess.run')
+    config = Config(Path('root'), ['file1.ts', 'info'])
+
+    with patch('builtins.open', open_mock):
+        assert {
+           'channelname': 'channel1',
+           'comment': 'added by vdr_to_hts_import.py',
+           'description': {'fin': 'description 1'},
+           'enabled': True,
+           'files': [{'filename': 'root/file1.ts'}],
+           'start': 1231,
+           'stop': 1231 + 768,
+           'subtitle': {'fin': 'subtitle1'},
+           'title': {'fin': 'title1'}
+        } == config.create_from_info()
+
+
+def test_config_multiple_ts_files(mocker):
     mocker.patch.multiple('vdr_to_hts_import.Info',
                           get_channel_name=Mock(return_value='channel1'),
                           get_description=Mock(return_value='description 1'),
