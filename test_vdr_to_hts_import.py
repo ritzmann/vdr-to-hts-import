@@ -14,6 +14,7 @@
 # along with vdr-to-hts-import.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
@@ -24,7 +25,8 @@ from vdr_to_hts_import import Config, DirWalker, Importer, Info, InfoError, Unic
 
 
 def test_dir_walker_walk(mocker):
-    mocker.patch('os.listdir', return_value=['dir1', 'dir2', 'dir3'])
+    mocker.patch('pathlib.Path.iterdir', return_value=[Path('dir1'), Path('dir2'), Path('dir3')])
+    mocker.patch('pathlib.Path.is_dir', return_value=True)
     file_list = ['file1', 'file2.ts', 'info']
     mocker.patch('os.walk', return_value=[['root1', [], file_list]])
     importer_mock = mocker.patch('vdr_to_hts_import.Importer')
@@ -113,7 +115,7 @@ def test_importer_import_record_no_ts_files(mocker):
                           get_duration=Mock(return_value=765))
 
     with pytest.raises(InfoError) as exc_info:
-        Importer.import_record('root', ['file1', 'info'])
+        Importer.import_record(Path('root'), ['file1', 'info'])
     assert 'found info file but no .ts files in directory root' == str(exc_info.value)
 
 
@@ -125,33 +127,27 @@ def test_config(mocker):
                           get_title=Mock(return_value='title1'),
                           get_start_date_time=Mock(return_value=1231),
                           get_duration=Mock(return_value=768))
-    run_mock = mocker.patch('subprocess.run')
-    run_mock.return_value.stdout = '384'  # 384 + 384 == 768 (total duration)
-    config = Config('root', ['file1.ts', 'info', 'file2.ts'])
+    open_mock = mocker.mock_open()
+    mocker.patch('subprocess.run')
+    config = Config(Path('root'), ['file1.ts', 'info', 'file2.ts'])
 
-    assert {
-       'channelname': 'channel1',
-       'comment': 'added by vdr_to_hts_import.py',
-       'description': {'fin': 'description 1'},
-       'enabled': True,
-       'files': [
-           {'filename': 'root/file1.ts',
-            'start': 1231,
-            'stop': 1231 + 384},
-           {'filename': 'root/file2.ts',
-            'start': 1231 + 384,
-            'stop': 1231 + 384 + 384}
-       ],
-       'start': 1231,
-       'stop': 1231 + 768,
-       'subtitle': {'fin': 'subtitle1'},
-       'title': {'fin': 'title1'}
-    } == config.create_from_info()
+    with patch('builtins.open', open_mock):
+        assert {
+           'channelname': 'channel1',
+           'comment': 'added by vdr_to_hts_import.py',
+           'description': {'fin': 'description 1'},
+           'enabled': True,
+           'files': [{'filename': 'root/concat.ts'}],
+           'start': 1231,
+           'stop': 1231 + 768,
+           'subtitle': {'fin': 'subtitle1'},
+           'title': {'fin': 'title1'}
+        } == config.create_from_info()
 
 
 def test_info_get_channel_name(mocker):
     open_mock = mocker.mock_open(read_data='C some-id channel1\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         assert 'channel1' == info.get_channel_name()
@@ -159,7 +155,7 @@ def test_info_get_channel_name(mocker):
 
 def test_info_get_channel_name_with_multiple_spaces(mocker):
     open_mock = mocker.mock_open(read_data='C some-id name of channel 1\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         assert 'name of channel 1' == info.get_channel_name()
@@ -167,7 +163,7 @@ def test_info_get_channel_name_with_multiple_spaces(mocker):
 
 def test_info_get_channel_name_no_id(mocker):
     open_mock = mocker.mock_open(read_data='C channel1\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         with pytest.raises(ValueError) as exc_info:
@@ -177,7 +173,7 @@ def test_info_get_channel_name_no_id(mocker):
 
 def test_info_get_channel_name_no_channel(mocker):
     open_mock = mocker.mock_open(read_data='Y channel1\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         with pytest.raises(InfoError) as exc_info:
@@ -188,7 +184,7 @@ def test_info_get_channel_name_no_channel(mocker):
 def test_info_get_channel_name_open_exception(mocker):
     open_mock = mocker.mock_open()
     open_mock.side_effect = IOError('test message')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         with pytest.raises(IOError) as exc_info:
@@ -198,7 +194,7 @@ def test_info_get_channel_name_open_exception(mocker):
 
 def test_info_get_description(mocker):
     open_mock = mocker.mock_open(read_data='D description1\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         assert 'description1' == info.get_description()
@@ -206,7 +202,7 @@ def test_info_get_description(mocker):
 
 def test_info_get_description_with_multiple_spaces(mocker):
     open_mock = mocker.mock_open(read_data='D description with spaces\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         assert 'description with spaces' == info.get_description()
@@ -214,7 +210,7 @@ def test_info_get_description_with_multiple_spaces(mocker):
 
 def test_info_get_description_no_description(mocker):
     open_mock = mocker.mock_open(read_data='Y no description\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         with pytest.raises(InfoError) as exc_info:
@@ -224,7 +220,7 @@ def test_info_get_description_no_description(mocker):
 
 def test_info_get_duration(mocker):
     open_mock = mocker.mock_open(read_data='E eventid 12312 234 tableid\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         assert 234 == info.get_duration()
@@ -232,7 +228,7 @@ def test_info_get_duration(mocker):
 
 def test_info_get_duration_additional_event_items(mocker):
     open_mock = mocker.mock_open(read_data='E eventid 12312 234 tableid FF\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         assert 234 == info.get_duration()
@@ -240,7 +236,7 @@ def test_info_get_duration_additional_event_items(mocker):
 
 def test_info_get_duration_wrong_number_event_items(mocker):
     open_mock = mocker.mock_open(read_data='E eventid 12312 tableid\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         with pytest.raises(InfoError) as exc_info:
@@ -250,7 +246,7 @@ def test_info_get_duration_wrong_number_event_items(mocker):
 
 def test_info_get_duration_invalid_format(mocker):
     open_mock = mocker.mock_open(read_data='E eventid 12312 23a4i tableid\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         with pytest.raises(InfoError) as exc_info:
@@ -260,7 +256,7 @@ def test_info_get_duration_invalid_format(mocker):
 
 def test_info_get_duration_no_duration(mocker):
     open_mock = mocker.mock_open(read_data='Y no event\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         with pytest.raises(InfoError) as exc_info:
@@ -270,7 +266,7 @@ def test_info_get_duration_no_duration(mocker):
 
 def test_info_get_subtitle(mocker):
     open_mock = mocker.mock_open(read_data='S subtitle1\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         assert 'subtitle1' == info.get_subtitle()
@@ -278,7 +274,7 @@ def test_info_get_subtitle(mocker):
 
 def test_info_get_subtitle_with_multiple_spaces(mocker):
     open_mock = mocker.mock_open(read_data='S subtitle with spaces\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         assert 'subtitle with spaces' == info.get_subtitle()
@@ -286,7 +282,7 @@ def test_info_get_subtitle_with_multiple_spaces(mocker):
 
 def test_info_get_subtitle_no_subtitle(mocker):
     open_mock = mocker.mock_open(read_data='Y no text\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         subtitle = info.get_subtitle()
@@ -296,7 +292,7 @@ def test_info_get_subtitle_no_subtitle(mocker):
 
 def test_info_get_start_date_time(mocker):
     open_mock = mocker.mock_open(read_data='E eventid 12312 234 tableid\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         assert 12312 == info.get_start_date_time()
@@ -304,7 +300,7 @@ def test_info_get_start_date_time(mocker):
 
 def test_info_get_start_date_time_additional_event_items(mocker):
     open_mock = mocker.mock_open(read_data='E eventid 12312 234 tableid FF\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         assert 12312 == info.get_start_date_time()
@@ -312,7 +308,7 @@ def test_info_get_start_date_time_additional_event_items(mocker):
 
 def test_info_get_start_date_time_wrong_number_event_items(mocker):
     open_mock = mocker.mock_open(read_data='E eventid 12312 tableid\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         with pytest.raises(InfoError) as exc_info:
@@ -322,7 +318,7 @@ def test_info_get_start_date_time_wrong_number_event_items(mocker):
 
 def test_info_get_start_date_time_invalid_format(mocker):
     open_mock = mocker.mock_open(read_data='E eventid 12a312c 234 tableid\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         with pytest.raises(InfoError) as exc_info:
@@ -332,7 +328,7 @@ def test_info_get_start_date_time_invalid_format(mocker):
 
 def test_info_get_start_date_time_no_start_date_time(mocker):
     open_mock = mocker.mock_open(read_data='Y no event\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         with pytest.raises(InfoError) as exc_info:
@@ -342,7 +338,7 @@ def test_info_get_start_date_time_no_start_date_time(mocker):
 
 def test_info_get_title(mocker):
     open_mock = mocker.mock_open(read_data='T title1\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         assert 'title1' == info.get_title()
@@ -350,7 +346,7 @@ def test_info_get_title(mocker):
 
 def test_info_get_title_unicode_escape(mocker):
     open_mock = mocker.mock_open(read_data='T s\\u00f6me Finnish title\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         assert 'söme Finnish title' == info.get_title()
@@ -358,7 +354,7 @@ def test_info_get_title_unicode_escape(mocker):
 
 def test_info_get_title_utf_8(mocker):
     open_mock = mocker.mock_open(read_data='T söme Finnish title\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         assert 'söme Finnish title' == info.get_title()
@@ -366,7 +362,7 @@ def test_info_get_title_utf_8(mocker):
 
 def test_info_get_title_with_multiple_spaces(mocker):
     open_mock = mocker.mock_open(read_data='T title with spaces\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         assert 'title with spaces' == info.get_title()
@@ -374,7 +370,7 @@ def test_info_get_title_with_multiple_spaces(mocker):
 
 def test_info_get_title_no_title(mocker):
     open_mock = mocker.mock_open(read_data='Y no title\n')
-    info = Info('test')
+    info = Info(Path('test'))
 
     with patch('builtins.open', open_mock):
         with pytest.raises(InfoError) as exc_info:

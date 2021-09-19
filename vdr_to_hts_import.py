@@ -17,14 +17,14 @@
 
 import json
 import logging
-import math
 import os
 import subprocess
+from pathlib import Path
 
 import requests
 from requests.auth import HTTPDigestAuth
 
-top_directory = '/v'
+top_directory = Path('/v')
 api_url = "http://localhost:9981/api/dvr/entry/create"
 user = 'user'
 password = 'password'
@@ -59,7 +59,7 @@ class Info:
     may occur multiple times, we store only one of the X lines.
     """
     def __init__(self, directory):
-        self.filepath = os.path.join(directory, 'info')
+        self.filepath = directory / 'info'
         self.info = {}
 
     def get_channel_name(self):
@@ -68,7 +68,7 @@ class Info:
         """
         channel = self._get('C')
         if channel is None:
-            raise InfoError('no channel in info file ' + self.filepath)
+            raise InfoError('no channel in info file ' + str(self.filepath))
         return channel[channel.index(' ') + 1:]
 
     def get_description(self):
@@ -77,7 +77,7 @@ class Info:
         """
         description = self._get('D')
         if description is None:
-            raise InfoError('no description in info file ' + self.filepath)
+            raise InfoError('no description in info file ' + str(self.filepath))
         return description
 
     def get_duration(self):
@@ -86,7 +86,7 @@ class Info:
         """
         event = self._get('E')
         if event is None:
-            raise InfoError('no EPG event in info file ' + self.filepath)
+            raise InfoError('no EPG event in info file ' + str(self.filepath))
 
         event_items = event.split()
         if len(event_items) < 4:
@@ -96,7 +96,7 @@ class Info:
         try:
             duration = int(event_items[2])
         except ValueError:
-            raise InfoError('EPG duration is wrong format in info file ' + self.filepath)
+            raise InfoError('EPG duration is wrong format in info file ' + str(self.filepath))
 
         return duration
 
@@ -112,7 +112,7 @@ class Info:
         """
         event = self._get('E')
         if event is None:
-            raise InfoError('no EPG event in info file ' + self.filepath)
+            raise InfoError('no EPG event in info file ' + str(self.filepath))
 
         event_items = event.split()
         if len(event_items) < 4:
@@ -122,7 +122,7 @@ class Info:
         try:
             start_date_time = int(event_items[1])
         except ValueError:
-            raise InfoError('EPG start date time is wrong format in info file ' + self.filepath)
+            raise InfoError('EPG start date time is wrong format in info file ' + str(self.filepath))
 
         return start_date_time
 
@@ -132,7 +132,7 @@ class Info:
         """
         title = self._get('T')
         if title is None:
-            raise InfoError('no title in info file ' + self.filepath)
+            raise InfoError('no title in info file ' + str(self.filepath))
         return title
 
     def _get(self, key):
@@ -150,7 +150,7 @@ class Info:
                         value = UnicodeEscapeHeuristic.decode(value)
                     self.info[key] = value.rstrip()
         except Exception as exc:
-            logging.error('Failed to process file ' + self.filepath, exc_info=exc)
+            logging.error('Failed to process file ' + str(self.filepath), exc_info=exc)
             raise
 
 
@@ -174,13 +174,9 @@ class Config:
         start_date_time = info.get_start_date_time()
         config['start'] = start_date_time
 
-        stop_date_time = start_date_time + info.get_duration()
-        config['stop'] = stop_date_time
+        config['stop'] = start_date_time + info.get_duration()
 
-        stop = self._add_files(config, start_date_time)
-        if stop_date_time != stop:
-            logging.warning("Expected total stop time %s to match combined stop time %s for directory %s",
-                            stop_date_time, stop, self.directory)
+        self._add_file(config)
 
         config['channelname'] = info.get_channel_name()
 
@@ -196,32 +192,39 @@ class Config:
 
         return config
 
-    def _add_files(self, config, start):
+    def _add_file(self, config):
+        """
+        Tvheadend allows only one file to be imported. (If you try to import multiple files, it will pick the last file
+        in the list.) Concatenate all files into one and import the concatenated file.
+        """
+        ts_files = []
         for file in self.files:
             if '.ts' == file[-3:]:
-                duration = self._add_ts_file(config, file, start)
-                start = start + duration
+                ts_files.append(file)
 
-        if len(config['files']) < 1:
-            raise InfoError('found info file but no .ts files in directory ' + self.directory)
+        number_of_ts_files = len(ts_files)
+        if number_of_ts_files < 1:
+            raise InfoError('found info file but no .ts files in directory ' + str(self.directory))
+        elif number_of_ts_files == 1:
+            filename = self.directory / ts_files[0]
+        else:
+            filename = self._concat_ts_files(ts_files)
 
-        # this is actually the stop timestamp of the last file
-        return start
-
-    def _add_ts_file(self, config, file, start):
-        duration = self._get_duration(file)
         config['files'].append({
-            'filename': str(os.path.join(self.directory, file)),
-            'start': start,
-            'stop': start + duration
+            'filename': str(filename)
         })
-        return duration
 
-    def _get_duration(self, file):
-        process = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of',
-                                  'default=noprint_wrappers=1:nokey=1', str(os.path.join(self.directory, file))],
-                                 capture_output=True, check=True, text=True)
-        return math.ceil(float(process.stdout))
+    def _concat_ts_files(self, files):
+        """
+        Use ffmpeg to concatenate all .ts files
+        """
+        with open('concat-files.txt', 'x') as concat_files:
+            for file in files:
+                concat_files.write(str(self.directory / file) + '\n')
+        filename = self.directory / 'concat.ts'
+        subprocess.run(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'concat-files.txt', '-c', 'copy', filename],
+                       check=True, text=True)
+        return filename
 
 
 class Importer:
@@ -251,11 +254,15 @@ class Importer:
 class DirWalker:
     @staticmethod
     def walk():
-        directories = os.listdir(top_directory)
-        for folder in directories:
-            for root, _, files in os.walk(os.path.join(top_directory, folder)):
-                if 'info' in files:
-                    Importer.import_record(root, files)
+        """
+        Walk through a directory tree with this structure:
+        / top directory / recording title / recording date / recording files
+        """
+        for recording_dir in top_directory.iterdir():
+            if recording_dir.is_dir():
+                for root, _, files in os.walk(recording_dir):
+                    if 'info' in files:
+                        Importer.import_record(root, files)
 
 
 def main():
