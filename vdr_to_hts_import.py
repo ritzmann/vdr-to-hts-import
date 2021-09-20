@@ -262,7 +262,7 @@ class DirWalker:
             if recording_dir.is_dir():
                 for root, _, files in os.walk(recording_dir):
                     if 'info' in files:
-                        Importer.import_record(root, files)
+                        Importer.import_record(Path(root), files)
 
 
 def main():

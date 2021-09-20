@@ -34,9 +34,9 @@ def test_dir_walker_walk(mocker):
     DirWalker.walk()
 
     importer_mock.assert_has_calls([
-        mocker.call.import_record('root1', file_list),
-        mocker.call.import_record('root1', file_list),
-        mocker.call.import_record('root1', file_list)
+        mocker.call.import_record(Path('root1'), file_list),
+        mocker.call.import_record(Path('root1'), file_list),
+        mocker.call.import_record(Path('root1'), file_list)
     ])
 
 
