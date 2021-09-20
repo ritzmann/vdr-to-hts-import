@@ -218,11 +218,12 @@ class Config:
         """
         Use ffmpeg to concatenate all .ts files
         """
-        with open('concat-files.txt', 'x') as concat_files:
+        filelist_path = Path(self.directory, 'filelist.txt')
+        with open(str(filelist_path), 'x') as concat_files:
             for file in files:
-                concat_files.write(str(self.directory / file) + '\n')
+                concat_files.write("file '" + str(self.directory / file) + "'\n")
         filename = self.directory / 'concat.ts'
-        subprocess.run(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', 'concat-files.txt', '-c', 'copy', filename],
+        subprocess.run(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', str(filelist_path), '-c', 'copy', str(filename)],
                        check=True, text=True)
         return filename
 
