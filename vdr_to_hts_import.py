@@ -223,7 +223,8 @@ class Config:
             for file in files:
                 concat_files.write("file '" + str(self.directory / file) + "'\n")
         filename = self.directory / 'concat.ts'
-        subprocess.run(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', str(filelist_path), '-c', 'copy', str(filename)],
+        subprocess.run(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', str(filelist_path), '-c', 'copy', '-scodec', 'copy', 
+                        str(filename)],
                        check=True, text=True)
         return filename
 
