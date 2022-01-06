@@ -22,12 +22,11 @@ import os
 import subprocess
 from pathlib import Path
 
+import keyring
 import requests
 from requests.auth import HTTPDigestAuth
 
 api_url = "http://localhost:9981/api/dvr/entry/create"
-user = 'user'
-password = 'password'
 
 
 class UnicodeEscapeHeuristic:
@@ -233,8 +232,11 @@ class Importer:
     """
     Read a VDR directory and import the files into Tvheadend
     """
-    @staticmethod
-    def import_record(directory, files):
+    def __init__(self, user):
+        self.user = user
+        self.password = keyring.get_password('vdr-to-hts-import', self.user)
+
+    def import_record(self, directory, files):
         config = Config(directory, files)
         config_dict = config.create_from_info()
         logging.info("import config:\n{}".format(json.dumps(config_dict, sort_keys=True, indent=4)))
@@ -247,15 +249,17 @@ class Importer:
         # the content type only to a form when you pass a dict into `data=`, we need to explicitly set the content type
         # to a form.
         response = requests.post(api_url,
-                                 auth=HTTPDigestAuth(user, password),
+                                 auth=HTTPDigestAuth(self.user, self.password),
                                  headers=headers,
                                  data="conf={}".format(json.dumps(config_dict)))
         logging.info("server response:\n{}".format(response.text))
 
 
 class DirWalker:
-    @staticmethod
-    def walk(top_directory):
+    def __init__(self, user):
+        self.importer = Importer(user)
+
+    def walk(self, top_directory):
         """
         Walk through a directory tree with this structure:
         / top directory / recording title / recording date / recording files
@@ -264,7 +268,7 @@ class DirWalker:
             if recording_dir.is_dir():
                 for root, _, files in os.walk(recording_dir):
                     if 'info' in files:
-                        Importer.import_record(Path(root), files)
+                        self.importer.import_record(Path(root), files)
 
 
 def main():
@@ -272,9 +276,11 @@ def main():
 
     parser = argparse.ArgumentParser(description='Import VDR recordings into HTS Tvheadend.')
     parser.add_argument('-d', '--dir', default='/v', help='top directory to scan for VDR recordings')
+    parser.add_argument('-u', '--user', required=True, help='user to authenticate with Tvheadend')
     args = parser.parse_args()
 
-    DirWalker.walk(args.dir)
+    walker = DirWalker(args.user)
+    walker.walk(args.dir)
 
 
 if __name__ == "__main__":

@@ -4,7 +4,12 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+# required by keyring for KWallet
+dbus-python = "*"
+keyring = "*"
 requests = "*"
+# required by keyring for Freedesktop Secret Service
+SecretStorage = "*"
 
 [dev-packages]
 pytest = "*"

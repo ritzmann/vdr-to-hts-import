@@ -31,16 +31,18 @@ def test_dir_walker_walk(mocker):
     mocker.patch('os.walk', return_value=[['root1', [], file_list]])
     importer_mock = mocker.patch('vdr_to_hts_import.Importer')
 
-    DirWalker.walk('top')
+    walker = DirWalker('user')
+    walker.walk('top')
 
     importer_mock.assert_has_calls([
-        mocker.call.import_record(Path('root1'), file_list),
-        mocker.call.import_record(Path('root1'), file_list),
-        mocker.call.import_record(Path('root1'), file_list)
+        mocker.call().import_record(Path('root1'), file_list),
+        mocker.call().import_record(Path('root1'), file_list),
+        mocker.call().import_record(Path('root1'), file_list)
     ])
 
 
 def test_importer_import_record(mocker):
+    mocker.patch('keyring.get_password', return_value='pwd1')
     mocker.patch('vdr_to_hts_import.Config.create_from_info', return_value={
         "enabled": True,
         "title": {"fin": "title1"},
@@ -55,7 +57,8 @@ def test_importer_import_record(mocker):
     response_mock = mocker.patch('requests.post', return_value=Mock())
     response_mock.text = 'response1'
 
-    Importer.import_record('root', ['file1', 'file1.ts', 'info', 'file2.ts', 'a.ts', '.ts', 'a'])
+    importer = Importer('user1')
+    importer.import_record('root', ['file1', 'file1.ts', 'info', 'file2.ts', 'a.ts', '.ts', 'a'])
 
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
     config = {
@@ -70,12 +73,13 @@ def test_importer_import_record(mocker):
         "stop": 1996
     }
     response_mock.assert_called_once_with(vdr_to_hts_import.api_url,
-                                          auth=HTTPDigestAuth(vdr_to_hts_import.user, vdr_to_hts_import.password),
+                                          auth=HTTPDigestAuth('user1', 'pwd1'),
                                           headers=headers,
                                           data="conf={}".format(json.dumps(config)))
 
 
 def test_importer_import_record_no_ts_files(mocker):
+    mocker.patch('keyring.get_password', return_value='pwd1')
     mocker.patch.multiple('vdr_to_hts_import.Info',
                           get_channel_name=Mock(return_value='channel1'),
                           get_title=Mock(return_value='title1'),
@@ -83,7 +87,8 @@ def test_importer_import_record_no_ts_files(mocker):
                           get_duration=Mock(return_value=765))
 
     with pytest.raises(InfoError) as exc_info:
-        Importer.import_record(Path('root'), ['file1', 'info'])
+        importer = Importer('user1')
+        importer.import_record(Path('root'), ['file1', 'info'])
     assert 'found info file but no .ts files in directory root' == str(exc_info.value)
 
 
