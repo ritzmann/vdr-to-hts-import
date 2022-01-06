@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "vdr-to-hts-import"
+version = "0.1.0"
+description = "Import VDR recordings to HTS Tvheadend"
+authors = ["Fabian Ritzmann <fabian@ritzmann.dev>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+# required by keyring for KWallet
+dbus-python = "^1.2.18"
+keyring = "^23.5.0"
+requests = "^2.27.1"
+# required by keyring for Freedesktop Secret Service
+SecretStorage = "^3.3.1"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.5"
+pytest-mock = "^3.6.1"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
