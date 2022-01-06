@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with vdr-to-hts-import.  If not, see <https://www.gnu.org/licenses/>.
 
+import argparse
 import json
 import logging
 import os
@@ -24,7 +25,6 @@ from pathlib import Path
 import requests
 from requests.auth import HTTPDigestAuth
 
-top_directory = Path('/v')
 api_url = "http://localhost:9981/api/dvr/entry/create"
 user = 'user'
 password = 'password'
@@ -223,8 +223,8 @@ class Config:
             for file in files:
                 concat_files.write("file '" + str(self.directory / file) + "'\n")
         filename = self.directory / 'concat.ts'
-        subprocess.run(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', str(filelist_path), '-c', 'copy', '-scodec', 'copy', 
-                        str(filename)],
+        subprocess.run(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', str(filelist_path), '-c', 'copy',
+                        '-scodec', 'copy', str(filename)],
                        check=True, text=True)
         return filename
 
@@ -255,12 +255,12 @@ class Importer:
 
 class DirWalker:
     @staticmethod
-    def walk():
+    def walk(top_directory):
         """
         Walk through a directory tree with this structure:
         / top directory / recording title / recording date / recording files
         """
-        for recording_dir in top_directory.iterdir():
+        for recording_dir in Path(top_directory).iterdir():
             if recording_dir.is_dir():
                 for root, _, files in os.walk(recording_dir):
                     if 'info' in files:
@@ -270,7 +270,11 @@ class DirWalker:
 def main():
     logging.basicConfig(filename='vdr_to_hts_import.log', level=logging.INFO, format='%(asctime)s %(message)s')
 
-    DirWalker.walk()
+    parser = argparse.ArgumentParser(description='Import VDR recordings into HTS Tvheadend.')
+    parser.add_argument('-d', '--dir', default='/v', help='top directory to scan for VDR recordings')
+    args = parser.parse_args()
+
+    DirWalker.walk(args.dir)
 
 
 if __name__ == "__main__":

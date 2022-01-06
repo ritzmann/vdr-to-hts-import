@@ -31,7 +31,7 @@ def test_dir_walker_walk(mocker):
     mocker.patch('os.walk', return_value=[['root1', [], file_list]])
     importer_mock = mocker.patch('vdr_to_hts_import.Importer')
 
-    DirWalker.walk()
+    DirWalker.walk('top')
 
     importer_mock.assert_has_calls([
         mocker.call.import_record(Path('root1'), file_list),
