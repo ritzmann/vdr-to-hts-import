@@ -1,4 +1,6 @@
-/shelf/
-/workspace.xml
+/*.egg-info/
 /.idea/
 /*.log
+/__pycache__/
+/shelf/
+/workspace.xml
